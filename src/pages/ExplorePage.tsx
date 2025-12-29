@@ -298,7 +298,8 @@ const ExplorePage = () => {
                 {filteredAcademies.map((academy) => (
                   <div
                     key={academy.id}
-                    className="bg-card border border-border rounded-xl p-4 shadow-card hover:shadow-soft transition-all duration-200"
+                    onClick={() => navigate(`/academy/${academy.id}`)}
+                    className="bg-card border border-border rounded-xl p-4 shadow-card hover:shadow-soft transition-all duration-200 cursor-pointer"
                   >
                     <div className="flex gap-4">
                       <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
@@ -321,7 +322,7 @@ const ExplorePage = () => {
                             <p className="text-sm text-muted-foreground">{academy.subject} 전문</p>
                           </div>
                           <button
-                            onClick={() => toggleBookmark(academy.id)}
+                            onClick={(e) => { e.stopPropagation(); toggleBookmark(academy.id); }}
                             className="p-1.5 hover:bg-muted rounded-full transition-colors shrink-0 ml-2"
                           >
                             <Heart 

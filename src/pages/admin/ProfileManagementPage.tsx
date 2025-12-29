@@ -6,26 +6,98 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, Image, FileText, Tags, X, Plus, Save } from "lucide-react";
+import {
+  Building2,
+  Image,
+  FileText,
+  Tags,
+  X,
+  Plus,
+  Save,
+  Users,
+  BookOpen,
+  Pencil,
+  Trash2,
+  GraduationCap,
+} from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type Academy = Database["public"]["Tables"]["academies"]["Row"];
+
+interface Teacher {
+  id: string;
+  name: string;
+  subject: string | null;
+  bio: string | null;
+  image_url: string | null;
+}
+
+interface Class {
+  id: string;
+  name: string;
+  target_grade: string | null;
+  schedule: string | null;
+  fee: number | null;
+  description: string | null;
+  teacher_id: string | null;
+  is_recruiting: boolean | null;
+}
 
 const ProfileManagementPage = () => {
   const [academy, setAcademy] = useState<Academy | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [user, setUser] = useState<any>(null);
-  
+
+  // Profile state
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [profileImage, setProfileImage] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
-  
+
+  // Teachers & Classes state
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
+
+  // Dialog state
+  const [isTeacherDialogOpen, setIsTeacherDialogOpen] = useState(false);
+  const [isClassDialogOpen, setIsClassDialogOpen] = useState(false);
+  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [editingClass, setEditingClass] = useState<Class | null>(null);
+
+  // Teacher form
+  const [teacherName, setTeacherName] = useState("");
+  const [teacherSubject, setTeacherSubject] = useState("");
+  const [teacherBio, setTeacherBio] = useState("");
+  const [teacherImage, setTeacherImage] = useState("");
+
+  // Class form
+  const [className, setClassName] = useState("");
+  const [classGrade, setClassGrade] = useState("");
+  const [classSchedule, setClassSchedule] = useState("");
+  const [classFee, setClassFee] = useState("");
+  const [classDescription, setClassDescription] = useState("");
+  const [classTeacherId, setClassTeacherId] = useState("");
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -37,39 +109,56 @@ const ProfileManagementPage = () => {
   }, []);
 
   useEffect(() => {
-    const fetchAcademy = async () => {
-      if (!user) return;
+    if (user) {
+      fetchAcademy();
+    }
+  }, [user]);
 
-      try {
-        const { data, error } = await supabase
-          .from("academies")
-          .select("*")
-          .eq("owner_id", user.id)
-          .maybeSingle();
+  const fetchAcademy = async () => {
+    if (!user) return;
 
-        if (error) throw error;
+    try {
+      const { data, error } = await supabase
+        .from("academies")
+        .select("*")
+        .eq("owner_id", user.id)
+        .maybeSingle();
 
-        if (data) {
-          setAcademy(data);
-          setName(data.name);
-          setDescription(data.description || "");
-          setProfileImage(data.profile_image || "");
-          setTags(data.tags || []);
-        }
-      } catch (error) {
-        console.error("Error fetching academy:", error);
-        toast({
-          title: "오류",
-          description: "학원 정보를 불러오는데 실패했습니다.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+      if (error) throw error;
+
+      if (data) {
+        setAcademy(data);
+        setName(data.name);
+        setDescription(data.description || "");
+        setProfileImage(data.profile_image || "");
+        setTags(data.tags || []);
+        fetchTeachers(data.id);
+        fetchClasses(data.id);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching academy:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchAcademy();
-  }, [user, toast]);
+  const fetchTeachers = async (academyId: string) => {
+    const { data } = await supabase
+      .from("teachers")
+      .select("*")
+      .eq("academy_id", academyId)
+      .order("created_at");
+    setTeachers((data as Teacher[]) || []);
+  };
+
+  const fetchClasses = async (academyId: string) => {
+    const { data } = await supabase
+      .from("classes")
+      .select("*")
+      .eq("academy_id", academyId)
+      .order("created_at");
+    setClasses((data as Class[]) || []);
+  };
 
   const handleAddTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
@@ -82,7 +171,7 @@ const ProfileManagementPage = () => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
-  const handleSave = async () => {
+  const handleSaveProfile = async () => {
     if (!academy) return;
 
     setSaving(true);
@@ -100,20 +189,138 @@ const ProfileManagementPage = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "저장 완료",
-        description: "학원 프로필이 성공적으로 업데이트되었습니다.",
-      });
+      toast({ title: "저장 완료", description: "프로필이 업데이트되었습니다." });
     } catch (error) {
       console.error("Error saving academy:", error);
-      toast({
-        title: "오류",
-        description: "저장에 실패했습니다. 다시 시도해주세요.",
-        variant: "destructive",
-      });
+      toast({ title: "오류", description: "저장에 실패했습니다.", variant: "destructive" });
     } finally {
       setSaving(false);
     }
+  };
+
+  // Teacher CRUD
+  const resetTeacherForm = () => {
+    setTeacherName("");
+    setTeacherSubject("");
+    setTeacherBio("");
+    setTeacherImage("");
+    setEditingTeacher(null);
+  };
+
+  const openTeacherDialog = (teacher?: Teacher) => {
+    if (teacher) {
+      setEditingTeacher(teacher);
+      setTeacherName(teacher.name);
+      setTeacherSubject(teacher.subject || "");
+      setTeacherBio(teacher.bio || "");
+      setTeacherImage(teacher.image_url || "");
+    } else {
+      resetTeacherForm();
+    }
+    setIsTeacherDialogOpen(true);
+  };
+
+  const handleSaveTeacher = async () => {
+    if (!academy || !teacherName.trim()) return;
+
+    try {
+      if (editingTeacher) {
+        await supabase
+          .from("teachers")
+          .update({
+            name: teacherName,
+            subject: teacherSubject || null,
+            bio: teacherBio || null,
+            image_url: teacherImage || null,
+          })
+          .eq("id", editingTeacher.id);
+      } else {
+        await supabase.from("teachers").insert({
+          academy_id: academy.id,
+          name: teacherName,
+          subject: teacherSubject || null,
+          bio: teacherBio || null,
+          image_url: teacherImage || null,
+        });
+      }
+
+      toast({ title: "저장 완료" });
+      setIsTeacherDialogOpen(false);
+      resetTeacherForm();
+      fetchTeachers(academy.id);
+    } catch (error) {
+      console.error("Error saving teacher:", error);
+      toast({ title: "오류", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteTeacher = async (id: string) => {
+    if (!academy) return;
+    await supabase.from("teachers").delete().eq("id", id);
+    fetchTeachers(academy.id);
+    toast({ title: "삭제 완료" });
+  };
+
+  // Class CRUD
+  const resetClassForm = () => {
+    setClassName("");
+    setClassGrade("");
+    setClassSchedule("");
+    setClassFee("");
+    setClassDescription("");
+    setClassTeacherId("");
+    setEditingClass(null);
+  };
+
+  const openClassDialog = (cls?: Class) => {
+    if (cls) {
+      setEditingClass(cls);
+      setClassName(cls.name);
+      setClassGrade(cls.target_grade || "");
+      setClassSchedule(cls.schedule || "");
+      setClassFee(cls.fee?.toString() || "");
+      setClassDescription(cls.description || "");
+      setClassTeacherId(cls.teacher_id || "");
+    } else {
+      resetClassForm();
+    }
+    setIsClassDialogOpen(true);
+  };
+
+  const handleSaveClass = async () => {
+    if (!academy || !className.trim()) return;
+
+    try {
+      const classData = {
+        name: className,
+        target_grade: classGrade || null,
+        schedule: classSchedule || null,
+        fee: classFee ? parseInt(classFee) : null,
+        description: classDescription || null,
+        teacher_id: classTeacherId || null,
+      };
+
+      if (editingClass) {
+        await supabase.from("classes").update(classData).eq("id", editingClass.id);
+      } else {
+        await supabase.from("classes").insert({ ...classData, academy_id: academy.id });
+      }
+
+      toast({ title: "저장 완료" });
+      setIsClassDialogOpen(false);
+      resetClassForm();
+      fetchClasses(academy.id);
+    } catch (error) {
+      console.error("Error saving class:", error);
+      toast({ title: "오류", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteClass = async (id: string) => {
+    if (!academy) return;
+    await supabase.from("classes").delete().eq("id", id);
+    fetchClasses(academy.id);
+    toast({ title: "삭제 완료" });
   };
 
   if (loading) {
@@ -128,18 +335,15 @@ const ProfileManagementPage = () => {
     return (
       <div className="min-h-screen bg-background pb-20">
         <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
-          <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="max-w-lg mx-auto px-4 h-14 flex items-center">
             <Logo size="sm" />
           </div>
         </header>
         <main className="max-w-lg mx-auto px-4 py-6">
-          <Card className="shadow-card border-border">
+          <Card className="shadow-card">
             <CardContent className="p-8 text-center">
               <Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
               <p className="text-muted-foreground">등록된 학원이 없습니다.</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                먼저 학원을 등록해주세요.
-              </p>
             </CardContent>
           </Card>
         </main>
@@ -150,151 +354,299 @@ const ProfileManagementPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
       <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <Logo size="sm" />
-          <span className="text-xs font-medium text-primary bg-secondary px-2 py-1 rounded-full">
-            프로필 관리
-          </span>
+          <span className="text-xs font-medium text-muted-foreground">프로필 관리</span>
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-lg mx-auto px-4 py-6">
-        <div className="flex items-center gap-2 mb-6">
-          <Building2 className="w-5 h-5 text-primary" />
-          <h2 className="font-semibold text-lg text-foreground">에듀맵 프로필 관리</h2>
-        </div>
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList className="w-full grid grid-cols-3 mb-6">
+            <TabsTrigger value="profile" className="gap-1 text-xs">
+              <Building2 className="w-3 h-3" />
+              프로필
+            </TabsTrigger>
+            <TabsTrigger value="teachers" className="gap-1 text-xs">
+              <Users className="w-3 h-3" />
+              강사진
+            </TabsTrigger>
+            <TabsTrigger value="classes" className="gap-1 text-xs">
+              <BookOpen className="w-3 h-3" />
+              개설 강좌
+            </TabsTrigger>
+          </TabsList>
 
-        <div className="space-y-6">
-          {/* Profile Image */}
-          <Card className="shadow-card border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Image className="w-4 h-4 text-primary" />
-                학원 대표 사진
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+          {/* Profile Tab */}
+          <TabsContent value="profile" className="space-y-4">
+            <Card className="shadow-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Image className="w-4 h-4 text-primary" />
+                  학원 대표 사진
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
                 {profileImage && (
-                  <div className="w-full h-40 rounded-xl overflow-hidden bg-muted">
-                    <img
-                      src={profileImage}
-                      alt="학원 대표 사진"
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="w-full h-40 rounded-xl overflow-hidden bg-muted mb-3">
+                    <img src={profileImage} alt="학원" className="w-full h-full object-cover" />
                   </div>
                 )}
                 <Input
-                  placeholder="이미지 URL을 입력하세요"
+                  placeholder="이미지 URL"
                   value={profileImage}
                   onChange={(e) => setProfileImage(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">
-                  학원 외관 또는 내부 사진의 URL을 입력해주세요
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Academy Name */}
-          <Card className="shadow-card border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-primary" />
-                학원명
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Input
-                placeholder="학원 이름"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </CardContent>
-          </Card>
+            <Card className="shadow-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-primary" />
+                  학원명
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Input value={name} onChange={(e) => setName(e.target.value)} />
+              </CardContent>
+            </Card>
 
-          {/* Description */}
-          <Card className="shadow-card border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <FileText className="w-4 h-4 text-primary" />
-                학원 소개글
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                placeholder="학원을 소개하는 글을 작성해주세요"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={4}
-              />
-              <p className="text-xs text-muted-foreground mt-2">
-                학부모님들이 보게 될 학원 소개 문구입니다
-              </p>
-            </CardContent>
-          </Card>
+            <Card className="shadow-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-primary" />
+                  학원 소개글
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={4}
+                />
+              </CardContent>
+            </Card>
 
-          {/* Tags */}
-          <Card className="shadow-card border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Tags className="w-4 h-4 text-primary" />
-                우리 학원 특징 (태그)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2 mb-3">
-                {tags.map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant="secondary"
-                    className="gap-1 pr-1"
-                  >
-                    {tag}
-                    <button
-                      onClick={() => handleRemoveTag(tag)}
-                      className="ml-1 hover:bg-primary/20 rounded-full p-0.5"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </Badge>
+            <Card className="shadow-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Tags className="w-4 h-4 text-primary" />
+                  특징 태그
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {tags.map((tag) => (
+                    <Badge key={tag} variant="secondary" className="gap-1 pr-1">
+                      {tag}
+                      <button onClick={() => handleRemoveTag(tag)} className="ml-1 p-0.5">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="태그 입력"
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
+                  />
+                  <Button variant="outline" size="icon" onClick={handleAddTag}>
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Button className="w-full gap-2" onClick={handleSaveProfile} disabled={saving}>
+              <Save className="w-4 h-4" />
+              {saving ? "저장 중..." : "변경사항 저장"}
+            </Button>
+          </TabsContent>
+
+          {/* Teachers Tab */}
+          <TabsContent value="teachers" className="space-y-4">
+            <Dialog open={isTeacherDialogOpen} onOpenChange={setIsTeacherDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="w-full" onClick={() => openTeacherDialog()}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  강사 추가
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>{editingTeacher ? "강사 수정" : "강사 추가"}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>이름 *</Label>
+                    <Input value={teacherName} onChange={(e) => setTeacherName(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>담당 과목</Label>
+                    <Input value={teacherSubject} onChange={(e) => setTeacherSubject(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>약력</Label>
+                    <Textarea value={teacherBio} onChange={(e) => setTeacherBio(e.target.value)} rows={3} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>프로필 이미지 URL</Label>
+                    <Input value={teacherImage} onChange={(e) => setTeacherImage(e.target.value)} />
+                  </div>
+                  <Button className="w-full" onClick={handleSaveTeacher}>
+                    저장
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {teachers.length === 0 ? (
+              <Card className="shadow-card">
+                <CardContent className="p-6 text-center">
+                  <Users className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">등록된 강사가 없습니다</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {teachers.map((teacher) => (
+                  <Card key={teacher.id} className="shadow-card">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center overflow-hidden shrink-0">
+                          {teacher.image_url ? (
+                            <img src={teacher.image_url} alt={teacher.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <GraduationCap className="w-6 h-6 text-primary" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-foreground">{teacher.name}</h4>
+                          <p className="text-xs text-muted-foreground">{teacher.subject || "과목 미지정"}</p>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => openTeacherDialog(teacher)}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDeleteTeacher(teacher.id)}>
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="태그 입력 (예: 1:1 맞춤 수업)"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleAddTag}
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                학원의 강점이나 특징을 태그로 추가해주세요
-              </p>
-            </CardContent>
-          </Card>
+            )}
+          </TabsContent>
 
-          {/* Save Button */}
-          <Button
-            className="w-full gap-2"
-            size="lg"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            <Save className="w-4 h-4" />
-            {saving ? "저장 중..." : "변경사항 저장"}
-          </Button>
-        </div>
+          {/* Classes Tab */}
+          <TabsContent value="classes" className="space-y-4">
+            <Dialog open={isClassDialogOpen} onOpenChange={setIsClassDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="w-full" onClick={() => openClassDialog()}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  강좌 추가
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{editingClass ? "강좌 수정" : "강좌 추가"}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>강좌명 *</Label>
+                    <Input value={className} onChange={(e) => setClassName(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>대상 학년</Label>
+                    <Select value={classGrade} onValueChange={setClassGrade}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="초등 저학년">초등 저학년</SelectItem>
+                        <SelectItem value="초등 고학년">초등 고학년</SelectItem>
+                        <SelectItem value="중학생">중학생</SelectItem>
+                        <SelectItem value="고등학생">고등학생</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>수업 일정</Label>
+                    <Input placeholder="예: 월/수/금 16:00~18:00" value={classSchedule} onChange={(e) => setClassSchedule(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>수강료 (원)</Label>
+                    <Input type="number" value={classFee} onChange={(e) => setClassFee(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>담당 강사</Label>
+                    <Select value={classTeacherId} onValueChange={setClassTeacherId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teachers.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>설명</Label>
+                    <Textarea value={classDescription} onChange={(e) => setClassDescription(e.target.value)} rows={3} />
+                  </div>
+                  <Button className="w-full" onClick={handleSaveClass}>
+                    저장
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {classes.length === 0 ? (
+              <Card className="shadow-card">
+                <CardContent className="p-6 text-center">
+                  <BookOpen className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">등록된 강좌가 없습니다</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {classes.map((cls) => (
+                  <Card key={cls.id} className="shadow-card">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="font-medium text-foreground">{cls.name}</h4>
+                          <p className="text-xs text-muted-foreground">{cls.target_grade || "대상 학년 미정"}</p>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => openClassDialog(cls)}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDeleteClass(cls.id)}>
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        {cls.schedule && <p>📅 {cls.schedule}</p>}
+                        {cls.fee && <p>💰 {cls.fee.toLocaleString()}원</p>}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
 
       <AdminBottomNavigation />

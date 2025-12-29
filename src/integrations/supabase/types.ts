@@ -88,6 +88,63 @@ export type Database = {
           },
         ]
       }
+      classes: {
+        Row: {
+          academy_id: string
+          created_at: string
+          description: string | null
+          fee: number | null
+          id: string
+          is_recruiting: boolean | null
+          name: string
+          schedule: string | null
+          target_grade: string | null
+          teacher_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          description?: string | null
+          fee?: number | null
+          id?: string
+          is_recruiting?: boolean | null
+          name: string
+          schedule?: string | null
+          target_grade?: string | null
+          teacher_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          description?: string | null
+          fee?: number | null
+          id?: string
+          is_recruiting?: boolean | null
+          name?: string
+          schedule?: string | null
+          target_grade?: string | null
+          teacher_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classes_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classes_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consultations: {
         Row: {
           academy_id: string
@@ -246,6 +303,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "seminars_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teachers: {
+        Row: {
+          academy_id: string
+          bio: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          name: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          bio?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          bio?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teachers_academy_id_fkey"
             columns: ["academy_id"]
             isOneToOne: false
             referencedRelation: "academies"
