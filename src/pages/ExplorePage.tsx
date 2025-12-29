@@ -1,12 +1,129 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import BottomNavigation from "@/components/BottomNavigation";
+import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, Filter, Star } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Search, MapPin, Filter, Star, Heart } from "lucide-react";
+import { toast } from "sonner";
+import type { Database } from "@/integrations/supabase/types";
+
+type Academy = Database["public"]["Tables"]["academies"]["Row"];
 
 const ExplorePage = () => {
+  const [academies, setAcademies] = useState<Academy[]>([]);
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedSubject, setSelectedSubject] = useState<string>("전체");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchBookmarks(session.user.id);
+      }
+    });
+
+    fetchAcademies();
+  }, []);
+
+  const fetchAcademies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("academies")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setAcademies(data || []);
+    } catch (error) {
+      console.error("Error fetching academies:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchBookmarks = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("bookmarks")
+        .select("academy_id")
+        .eq("user_id", userId);
+
+      if (error) throw error;
+      setBookmarkedIds(new Set(data?.map(b => b.academy_id) || []));
+    } catch (error) {
+      console.error("Error fetching bookmarks:", error);
+    }
+  };
+
+  const toggleBookmark = async (academyId: string) => {
+    if (!user) {
+      toast.error("로그인이 필요합니다");
+      return;
+    }
+
+    const isBookmarked = bookmarkedIds.has(academyId);
+
+    try {
+      if (isBookmarked) {
+        const { error } = await supabase
+          .from("bookmarks")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("academy_id", academyId);
+
+        if (error) throw error;
+
+        setBookmarkedIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(academyId);
+          return newSet;
+        });
+        toast.success("찜 목록에서 삭제되었습니다");
+      } else {
+        const { error } = await supabase
+          .from("bookmarks")
+          .insert({
+            user_id: user.id,
+            academy_id: academyId
+          });
+
+        if (error) throw error;
+
+        setBookmarkedIds(prev => new Set(prev).add(academyId));
+        toast.success("찜 목록에 추가되었습니다");
+      }
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+      toast.error("오류가 발생했습니다");
+    }
+  };
+
+  const subjects = ["전체", "수학", "영어", "국어", "과학", "코딩", "음악", "미술"];
+
+  const filteredAcademies = academies.filter(academy => {
+    const matchesSubject = selectedSubject === "전체" || academy.subject === selectedSubject;
+    const matchesSearch = searchQuery === "" || 
+      academy.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      academy.subject.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSubject && matchesSearch;
+  });
+
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header with Search */}
+      {/* Header */}
       <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
+        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+          <Logo size="sm" />
+          <span className="text-xs font-medium text-muted-foreground">학원 탐색</span>
+        </div>
+      </header>
+
+      {/* Search */}
+      <div className="bg-card border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-3">
           <div className="flex items-center gap-2">
             <div className="flex-1 relative">
@@ -14,6 +131,8 @@ const ExplorePage = () => {
               <input
                 type="text"
                 placeholder="학원명, 과목으로 검색"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full h-10 pl-10 pr-4 rounded-xl bg-muted border-none text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
@@ -22,10 +141,10 @@ const ExplorePage = () => {
             </Button>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Map Area (Placeholder) */}
-      <div className="h-48 bg-secondary/50 flex items-center justify-center border-b border-border">
+      <div className="h-36 bg-secondary/50 flex items-center justify-center border-b border-border">
         <div className="text-center">
           <MapPin className="w-8 h-8 text-primary mx-auto mb-2" />
           <p className="text-sm text-muted-foreground">지도에서 학원 찾기</p>
@@ -33,16 +152,17 @@ const ExplorePage = () => {
       </div>
 
       {/* Filter Tags */}
-      <div className="max-w-lg mx-auto px-4 py-3 border-b border-border">
+      <div className="max-w-lg mx-auto px-4 py-3 border-b border-border bg-card">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-          {["전체", "수학", "영어", "국어", "과학", "예체능", "코딩"].map((tag, idx) => (
+          {subjects.map((subject) => (
             <Button
-              key={tag}
-              variant={idx === 0 ? "default" : "outline"}
+              key={subject}
+              variant={selectedSubject === subject ? "default" : "outline"}
               size="sm"
               className="shrink-0"
+              onClick={() => setSelectedSubject(subject)}
             >
-              {tag}
+              {subject}
             </Button>
           ))}
         </div>
@@ -51,42 +171,81 @@ const ExplorePage = () => {
       {/* Results */}
       <main className="max-w-lg mx-auto px-4 py-4">
         <p className="text-sm text-muted-foreground mb-4">
-          총 <span className="text-primary font-semibold">24개</span> 학원
+          총 <span className="text-primary font-semibold">{filteredAcademies.length}개</span> 학원
         </p>
 
-        <div className="space-y-3">
-          {[
-            { name: "스마트 수학학원", subject: "수학", rating: 4.7, reviews: 128, distance: "250m" },
-            { name: "잉글리시타운", subject: "영어", rating: 4.5, reviews: 95, distance: "400m" },
-            { name: "창의력 과학교실", subject: "과학", rating: 4.8, reviews: 67, distance: "600m" },
-            { name: "논술왕 국어학원", subject: "국어", rating: 4.6, reviews: 82, distance: "750m" },
-          ].map((academy, idx) => (
-            <div
-              key={idx}
-              className="bg-card border border-border rounded-xl p-4 shadow-card hover:shadow-soft transition-all duration-200"
-            >
-              <div className="flex gap-4">
-                <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center shrink-0">
-                  <span className="text-xl font-bold text-primary">
-                    {academy.name.charAt(0)}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-foreground truncate">{academy.name}</h4>
-                  <p className="text-sm text-muted-foreground">{academy.subject} 전문</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="flex items-center gap-0.5">
-                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                      <span className="text-sm font-medium text-foreground">{academy.rating}</span>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        ) : filteredAcademies.length === 0 ? (
+          <div className="text-center py-12">
+            <Search className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">검색 결과가 없습니다</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredAcademies.map((academy) => (
+              <div
+                key={academy.id}
+                className="bg-card border border-border rounded-xl p-4 shadow-card hover:shadow-soft transition-all duration-200"
+              >
+                <div className="flex gap-4">
+                  <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
+                    {academy.profile_image ? (
+                      <img 
+                        src={academy.profile_image} 
+                        alt={academy.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-xl font-bold text-primary">
+                        {academy.name.charAt(0)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-foreground truncate">{academy.name}</h4>
+                        <p className="text-sm text-muted-foreground">{academy.subject} 전문</p>
+                      </div>
+                      <button
+                        onClick={() => toggleBookmark(academy.id)}
+                        className="p-1.5 hover:bg-muted rounded-full transition-colors shrink-0 ml-2"
+                      >
+                        <Heart 
+                          className={`w-5 h-5 transition-colors ${
+                            bookmarkedIds.has(academy.id) 
+                              ? "fill-red-500 text-red-500" 
+                              : "text-muted-foreground hover:text-red-500"
+                          }`} 
+                        />
+                      </button>
                     </div>
-                    <span className="text-xs text-muted-foreground">리뷰 {academy.reviews}</span>
-                    <span className="text-xs text-muted-foreground">• {academy.distance}</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      {academy.is_mou && (
+                        <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">
+                          MOU
+                        </Badge>
+                      )}
+                      {academy.tags && academy.tags.slice(0, 2).map((tag) => (
+                        <Badge key={tag} variant="outline" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                    {academy.address && (
+                      <p className="text-xs text-muted-foreground mt-1 truncate">
+                        {academy.address}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </main>
 
       <BottomNavigation />
