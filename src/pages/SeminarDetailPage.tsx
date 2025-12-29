@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,9 @@ import {
   Building2,
   GraduationCap,
   CheckCircle2,
+  Share2,
+  Heart,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -47,6 +51,7 @@ interface Seminar {
   academy?: {
     name: string;
     address: string | null;
+    profile_image: string | null;
   };
 }
 
@@ -61,6 +66,7 @@ const SeminarDetailPage = () => {
   const [applicationCount, setApplicationCount] = useState(0);
   const [hasApplied, setHasApplied] = useState(false);
   const [myApplication, setMyApplication] = useState<any>(null);
+  const [isLiked, setIsLiked] = useState(false);
 
   // Form state
   const [studentName, setStudentName] = useState("");
@@ -90,7 +96,8 @@ const SeminarDetailPage = () => {
           *,
           academy:academies (
             name,
-            address
+            address,
+            profile_image
           )
         `)
         .eq("id", id)
@@ -209,6 +216,41 @@ const SeminarDetailPage = () => {
     });
   };
 
+  const getDDay = (dateString: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const seminarDate = new Date(dateString);
+    seminarDate.setHours(0, 0, 0, 0);
+    const diffTime = seminarDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return "D-Day";
+    if (diffDays > 0) return `D-${diffDays}`;
+    return null;
+  };
+
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: seminar?.title || "설명회",
+          text: `${seminar?.academy?.name || "학원"} - ${seminar?.title}`,
+          url: window.location.href,
+        });
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success("링크가 복사되었습니다");
+      }
+    } catch (error) {
+      console.error("Share failed:", error);
+    }
+  };
+
+  const handleLike = () => {
+    setIsLiked(!isLiked);
+    toast.success(isLiked ? "찜 목록에서 삭제되었습니다" : "찜 목록에 추가되었습니다");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -219,29 +261,49 @@ const SeminarDetailPage = () => {
 
   if (!seminar) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">설명회를 찾을 수 없습니다</p>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-4">
+        <AlertCircle className="w-16 h-16 text-muted-foreground" />
+        <p className="text-muted-foreground text-center">설명회를 찾을 수 없습니다</p>
         <Button onClick={() => navigate(-1)}>뒤로 가기</Button>
       </div>
     );
   }
 
-  const remainingSpots = (seminar.capacity || 30) - applicationCount;
+  const capacity = seminar.capacity || 30;
+  const remainingSpots = capacity - applicationCount;
+  const fillRate = (applicationCount / capacity) * 100;
+  const dDay = getDDay(seminar.date);
+  const isUrgent = dDay && dDay !== "D-Day" && parseInt(dDay.replace("D-", "")) <= 3;
+
+  // Generate tags
+  const tags: string[] = [];
+  if (seminar.target_grade) tags.push(`#${seminar.target_grade}`);
+  if (seminar.subject) tags.push(`#${seminar.subject}`);
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-28">
       {/* Header */}
       <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <Logo size="sm" />
+        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <Logo size="sm" />
+          </div>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={handleLike}>
+              <Heart className={`w-5 h-5 ${isLiked ? "fill-destructive text-destructive" : ""}`} />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleShare}>
+              <Share2 className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Hero Image */}
-      <div className="h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+      <div className="relative aspect-[16/9] bg-gradient-to-br from-primary/20 via-accent/10 to-secondary/30 flex items-center justify-center overflow-hidden">
         {seminar.image_url ? (
           <img
             src={seminar.image_url}
@@ -249,89 +311,141 @@ const SeminarDetailPage = () => {
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="text-center">
-            <GraduationCap className="w-16 h-16 text-primary mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">설명회 포스터</p>
+          <div className="text-center p-6">
+            <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
+              <GraduationCap className="w-12 h-12 text-primary" />
+            </div>
+            <p className="text-sm text-muted-foreground font-medium">설명회 포스터</p>
           </div>
         )}
+
+        {/* D-Day Badge */}
+        {dDay && (
+          <div className="absolute top-4 right-4">
+            <Badge
+              className={`${
+                dDay === "D-Day" || isUrgent
+                  ? "bg-destructive text-destructive-foreground animate-pulse"
+                  : "bg-card/90 text-foreground"
+              } px-4 py-1.5 text-sm font-bold shadow-lg backdrop-blur-sm`}
+            >
+              {dDay}
+            </Badge>
+          </div>
+        )}
+
+        {/* Status Badge */}
+        <div className="absolute top-4 left-4">
+          <Badge
+            className={`${
+              seminar.status === "recruiting"
+                ? isUrgent
+                  ? "bg-destructive text-destructive-foreground"
+                  : "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground"
+            } px-4 py-1.5 text-sm font-semibold shadow-lg`}
+          >
+            {seminar.status === "recruiting" ? (isUrgent ? "마감임박" : "모집중") : "마감"}
+          </Badge>
+        </div>
       </div>
 
       {/* Content */}
       <main className="max-w-lg mx-auto px-4 py-6">
-        {/* Title Section */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Badge
-              variant={seminar.status === "recruiting" ? "default" : "secondary"}
-            >
-              {seminar.status === "recruiting" ? "모집중" : "마감"}
-            </Badge>
-            {seminar.subject && (
-              <Badge variant="outline">{seminar.subject}</Badge>
-            )}
-            {seminar.target_grade && (
-              <Badge variant="outline">{seminar.target_grade}</Badge>
-            )}
-          </div>
-          <h1 className="text-xl font-bold text-foreground mb-2">
-            {seminar.title}
-          </h1>
-          {seminar.academy && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Building2 className="w-4 h-4" />
-              <span className="text-sm">{seminar.academy.name}</span>
+        {/* Academy Info */}
+        {seminar.academy && (
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
+              {seminar.academy.profile_image ? (
+                <img
+                  src={seminar.academy.profile_image}
+                  alt={seminar.academy.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Building2 className="w-5 h-5 text-primary" />
+              )}
             </div>
-          )}
-        </div>
+            <span className="text-sm font-medium text-muted-foreground">
+              {seminar.academy.name}
+            </span>
+          </div>
+        )}
+
+        {/* Title */}
+        <h1 className="text-2xl font-bold text-foreground mb-4 leading-tight">
+          {seminar.title}
+        </h1>
+
+        {/* Tags */}
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            {tags.map((tag, idx) => (
+              <span
+                key={idx}
+                className="px-3 py-1.5 bg-secondary/60 text-secondary-foreground text-sm font-medium rounded-full"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Info Cards */}
         <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 text-primary mb-1">
-              <Calendar className="w-4 h-4" />
-              <span className="text-xs font-medium">날짜</span>
+          <div className="bg-card border border-border rounded-xl p-4 shadow-card">
+            <div className="flex items-center gap-2 text-primary mb-2">
+              <Calendar className="w-5 h-5" />
+              <span className="text-xs font-semibold">날짜</span>
             </div>
-            <p className="text-sm font-semibold text-foreground">
+            <p className="text-sm font-bold text-foreground">
               {formatDate(seminar.date)}
             </p>
           </div>
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 text-primary mb-1">
-              <Clock className="w-4 h-4" />
-              <span className="text-xs font-medium">시간</span>
+          <div className="bg-card border border-border rounded-xl p-4 shadow-card">
+            <div className="flex items-center gap-2 text-primary mb-2">
+              <Clock className="w-5 h-5" />
+              <span className="text-xs font-semibold">시간</span>
             </div>
-            <p className="text-sm font-semibold text-foreground">
+            <p className="text-sm font-bold text-foreground">
               {formatTime(seminar.date)}
             </p>
           </div>
-          <div className="bg-card border border-border rounded-xl p-4 col-span-2">
-            <div className="flex items-center gap-2 text-primary mb-1">
-              <MapPin className="w-4 h-4" />
-              <span className="text-xs font-medium">장소</span>
+          <div className="bg-card border border-border rounded-xl p-4 col-span-2 shadow-card">
+            <div className="flex items-center gap-2 text-primary mb-2">
+              <MapPin className="w-5 h-5" />
+              <span className="text-xs font-semibold">장소</span>
             </div>
-            <p className="text-sm text-foreground">
+            <p className="text-sm font-medium text-foreground">
               {seminar.location || "장소 미정"}
             </p>
           </div>
-          <div className="bg-card border border-border rounded-xl p-4 col-span-2">
-            <div className="flex items-center gap-2 text-primary mb-1">
-              <Users className="w-4 h-4" />
-              <span className="text-xs font-medium">모집 현황</span>
+        </div>
+
+        {/* Capacity with Progress */}
+        <div className="bg-card border border-border rounded-xl p-4 mb-6 shadow-card">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 text-primary">
+              <Users className="w-5 h-5" />
+              <span className="text-xs font-semibold">모집 현황</span>
             </div>
-            <p className="text-sm text-foreground">
-              {applicationCount}명 신청 / {seminar.capacity || 30}명 정원
-              <span className="text-muted-foreground ml-2">
-                ({remainingSpots > 0 ? `${remainingSpots}자리 남음` : "마감"})
-              </span>
-            </p>
+            <span className="text-sm font-bold text-foreground">
+              {applicationCount} / {capacity}명
+            </span>
           </div>
+          <Progress value={fillRate} className="h-2.5 mb-2" />
+          <p className={`text-xs font-medium ${remainingSpots <= 5 ? "text-destructive" : "text-muted-foreground"}`}>
+            {remainingSpots > 0 
+              ? `${remainingSpots}자리 남음${remainingSpots <= 5 ? " - 서두르세요!" : ""}` 
+              : "마감되었습니다"}
+          </p>
         </div>
 
         {/* Description */}
         <div className="mb-6">
-          <h2 className="font-semibold text-foreground mb-3">설명회 안내</h2>
-          <div className="bg-card border border-border rounded-xl p-4">
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+          <h2 className="font-bold text-foreground text-lg mb-3">설명회 안내</h2>
+          <div className="bg-card border border-border rounded-xl p-5 shadow-card">
+            <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
               {seminar.description || "상세 내용이 없습니다."}
             </p>
           </div>
@@ -340,13 +454,16 @@ const SeminarDetailPage = () => {
         {/* My Application Status */}
         {hasApplied && myApplication && (
           <div className="mb-6">
-            <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
-              <div className="flex items-center gap-2 text-primary mb-2">
-                <CheckCircle2 className="w-5 h-5" />
-                <span className="font-semibold">신청 완료</span>
+            <div className="bg-primary/10 border border-primary/20 rounded-xl p-5">
+              <div className="flex items-center gap-2 text-primary mb-3">
+                <CheckCircle2 className="w-6 h-6" />
+                <span className="font-bold text-lg">신청 완료</span>
               </div>
               <p className="text-sm text-foreground">
-                {myApplication.student_name} ({myApplication.student_grade}) · {myApplication.attendee_count}명 참석 예정
+                <span className="font-semibold">{myApplication.student_name}</span> ({myApplication.student_grade})
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {myApplication.attendee_count}명 참석 예정
               </p>
             </div>
           </div>
@@ -354,11 +471,11 @@ const SeminarDetailPage = () => {
       </main>
 
       {/* Fixed Bottom Button */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 z-50">
+      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border p-4 z-50">
         <div className="max-w-lg mx-auto">
           {hasApplied ? (
             <Button
-              className="w-full h-14 text-base"
+              className="w-full h-14 text-base font-semibold"
               variant="secondary"
               disabled
             >
@@ -367,7 +484,7 @@ const SeminarDetailPage = () => {
             </Button>
           ) : (
             <Button
-              className="w-full h-14 text-base"
+              className="w-full h-14 text-base font-semibold"
               size="xl"
               disabled={seminar.status === "closed" || remainingSpots <= 0}
               onClick={() => setIsDialogOpen(true)}
@@ -384,7 +501,7 @@ const SeminarDetailPage = () => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-sm mx-auto">
           <DialogHeader>
-            <DialogTitle>설명회 참가 신청</DialogTitle>
+            <DialogTitle className="text-lg">설명회 참가 신청</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -430,7 +547,7 @@ const SeminarDetailPage = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="message">질문 사항</Label>
+              <Label htmlFor="message">질문 사항 (선택)</Label>
               <Textarea
                 id="message"
                 placeholder="설명회에서 듣고 싶은 내용이 있으시면 적어주세요"
@@ -440,7 +557,7 @@ const SeminarDetailPage = () => {
               />
             </div>
             <Button
-              className="w-full"
+              className="w-full h-12 font-semibold"
               onClick={handleApply}
               disabled={submitting}
             >

@@ -1,85 +1,100 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import BottomNavigation from "@/components/BottomNavigation";
 import Logo from "@/components/Logo";
+import QuickCategoryMenu from "@/components/QuickCategoryMenu";
+import SeminarFeedCard from "@/components/SeminarFeedCard";
+import EmptySeminarState from "@/components/EmptySeminarState";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { MapPin, Star, ChevronRight, Calendar, Clock, Building2 } from "lucide-react";
+import { MapPin, Search, RefreshCw } from "lucide-react";
 
 interface Seminar {
   id: string;
   title: string;
   date: string;
+  location: string | null;
+  image_url: string | null;
+  subject: string | null;
+  target_grade: string | null;
   status: "recruiting" | "closed";
   academy?: {
     name: string;
-  };
+    profile_image: string | null;
+  } | null;
 }
+
+const ITEMS_PER_PAGE = 5;
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
   const [seminars, setSeminars] = useState<Seminar[]>([]);
-  const [loadingSeminars, setLoadingSeminars] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-
-    fetchUpcomingSeminars();
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchUpcomingSeminars = async () => {
+  const fetchSeminars = useCallback(async (pageNum: number, append: boolean = false) => {
     try {
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+
       const { data, error } = await supabase
         .from("seminars")
         .select(`
           id,
           title,
           date,
+          location,
+          image_url,
+          subject,
+          target_grade,
           status,
           academy:academies (
-            name
+            name,
+            profile_image
           )
         `)
         .eq("status", "recruiting")
         .gte("date", new Date().toISOString())
         .order("date", { ascending: true })
-        .limit(5);
+        .range(pageNum * ITEMS_PER_PAGE, (pageNum + 1) * ITEMS_PER_PAGE - 1);
 
       if (error) throw error;
-      setSeminars((data as any) || []);
+
+      const fetchedData = (data as any) || [];
+      
+      if (append) {
+        setSeminars(prev => [...prev, ...fetchedData]);
+      } else {
+        setSeminars(fetchedData);
+      }
+      
+      setHasMore(fetchedData.length === ITEMS_PER_PAGE);
     } catch (error) {
       console.error("Error fetching seminars:", error);
     } finally {
-      setLoadingSeminars(false);
+      setLoading(false);
+      setLoadingMore(false);
     }
+  }, []);
+
+  useEffect(() => {
+    fetchSeminars(0);
+  }, [fetchSeminars]);
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchSeminars(nextPage, true);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("ko-KR", {
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString("ko-KR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const handleRefresh = () => {
+    setPage(0);
+    fetchSeminars(0);
   };
 
   return (
@@ -107,132 +122,102 @@ const HomePage = () => {
           </p>
           <Button 
             variant="secondary" 
-            className="w-full bg-card text-foreground hover:bg-card/90"
+            className="w-full bg-card text-foreground hover:bg-card/90 gap-2"
             onClick={() => navigate("/explore")}
           >
+            <Search className="w-4 h-4" />
             학원 검색하기
           </Button>
         </div>
 
-        {/* Quick Categories */}
+        {/* Quick Category Menu */}
         <section className="mb-8">
-          <h3 className="font-semibold text-foreground mb-4">인기 과목</h3>
-          <div className="grid grid-cols-4 gap-3">
-            {["수학", "영어", "국어", "과학"].map((subject) => (
-              <button
-                key={subject}
-                onClick={() => navigate(`/explore?subject=${subject}`)}
-                className="bg-card border border-border rounded-xl p-4 text-center hover:border-primary hover:bg-secondary/30 transition-all duration-200 shadow-card"
-              >
-                <span className="text-sm font-medium text-foreground">{subject}</span>
-              </button>
-            ))}
-          </div>
+          <h3 className="font-semibold text-foreground mb-4">빠른 카테고리</h3>
+          <QuickCategoryMenu />
         </section>
 
-        {/* Upcoming Seminars */}
-        {seminars.length > 0 && (
-          <section className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-foreground">🎓 놓치면 안 될 이번 달 설명회</h3>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-primary text-sm"
-                onClick={() => navigate("/explore?tab=seminars")}
-              >
-                더보기 <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-            
-            <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
-              {loadingSeminars ? (
-                <div className="flex items-center justify-center w-full py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-                </div>
-              ) : (
-                seminars.map((seminar) => (
-                  <div
-                    key={seminar.id}
-                    onClick={() => navigate(`/seminar/${seminar.id}`)}
-                    className="min-w-[200px] bg-card border border-border rounded-xl overflow-hidden shadow-card hover:shadow-soft transition-all duration-200 cursor-pointer shrink-0"
-                  >
-                    {/* Thumbnail placeholder */}
-                    <div className="h-24 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                      <Calendar className="w-8 h-8 text-primary" />
-                    </div>
-                    <div className="p-3">
-                      <Badge variant="secondary" className="mb-2 text-xs">
-                        {seminar.status === "recruiting" ? "모집중" : "마감"}
-                      </Badge>
-                      <h4 className="font-medium text-foreground text-sm line-clamp-2 mb-2">
-                        {seminar.title}
-                      </h4>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                        <Clock className="w-3 h-3" />
-                        <span>{formatDate(seminar.date)} {formatTime(seminar.date)}</span>
-                      </div>
-                      {seminar.academy && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Building2 className="w-3 h-3" />
-                          <span className="truncate">{seminar.academy.name}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* Nearby Academies */}
+        {/* Seminar Feed */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-foreground">내 주변 인기 학원</h3>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-primary text-sm"
-              onClick={() => navigate("/explore")}
+            <div>
+              <h3 className="font-bold text-foreground text-lg">
+                🎯 지금 바로 신청 가능한 설명회
+              </h3>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                놓치면 안 될 이번 달 설명회
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRefresh}
+              className="text-muted-foreground"
             >
-              더보기 <ChevronRight className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
           </div>
-          
-          <div className="space-y-3">
-            {[
-              { name: "청담 수학학원", subject: "수학", rating: 4.8, distance: "350m" },
-              { name: "영어나라 어학원", subject: "영어", rating: 4.6, distance: "500m" },
-              { name: "한솔 국어논술", subject: "국어", rating: 4.9, distance: "800m" },
-            ].map((academy, idx) => (
-              <div
-                key={idx}
-                className="bg-card border border-border rounded-xl p-4 flex items-center gap-4 shadow-card hover:shadow-soft transition-all duration-200 cursor-pointer"
-                onClick={() => navigate("/explore")}
-              >
-                <div className="w-14 h-14 rounded-xl bg-secondary flex items-center justify-center">
-                  <span className="text-lg font-bold text-primary">
-                    {academy.name.charAt(0)}
-                  </span>
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-foreground">{academy.name}</h4>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span>{academy.subject}</span>
-                    <span>•</span>
-                    <span className="flex items-center gap-0.5">
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                      {academy.rating}
-                    </span>
-                    <span>•</span>
-                    <span>{academy.distance}</span>
+
+          {loading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="bg-card border border-border rounded-2xl overflow-hidden animate-pulse"
+                >
+                  <div className="aspect-[4/3] bg-muted" />
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-muted" />
+                      <div className="h-4 w-24 bg-muted rounded" />
+                    </div>
+                    <div className="h-6 w-3/4 bg-muted rounded" />
+                    <div className="h-4 w-1/2 bg-muted rounded" />
+                    <div className="h-4 w-2/3 bg-muted rounded" />
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : seminars.length === 0 ? (
+            <EmptySeminarState />
+          ) : (
+            <div className="space-y-5">
+              {seminars.map((seminar) => (
+                <SeminarFeedCard
+                  key={seminar.id}
+                  id={seminar.id}
+                  title={seminar.title}
+                  date={seminar.date}
+                  location={seminar.location}
+                  imageUrl={seminar.image_url}
+                  subject={seminar.subject}
+                  targetGrade={seminar.target_grade}
+                  status={seminar.status}
+                  academy={seminar.academy}
+                />
+              ))}
+
+              {/* Load More Button */}
+              {hasMore && (
+                <div className="pt-4">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                  >
+                    {loadingMore ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        불러오는 중...
+                      </>
+                    ) : (
+                      "더보기"
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </section>
       </main>
 
