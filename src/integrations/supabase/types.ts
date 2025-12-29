@@ -22,7 +22,7 @@ export type Database = {
           id: string
           is_mou: boolean | null
           name: string
-          owner_id: string
+          owner_id: string | null
           profile_image: string | null
           subject: string
           tags: string[] | null
@@ -36,7 +36,7 @@ export type Database = {
           id?: string
           is_mou?: boolean | null
           name: string
-          owner_id: string
+          owner_id?: string | null
           profile_image?: string | null
           subject: string
           tags?: string[] | null
@@ -50,7 +50,7 @@ export type Database = {
           id?: string
           is_mou?: boolean | null
           name?: string
-          owner_id?: string
+          owner_id?: string | null
           profile_image?: string | null
           subject?: string
           tags?: string[] | null
