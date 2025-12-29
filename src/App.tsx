@@ -8,9 +8,11 @@ import AuthPage from "./pages/AuthPage";
 import HomePage from "./pages/HomePage";
 import ExplorePage from "./pages/ExplorePage";
 import MyPage from "./pages/MyPage";
+import SeminarDetailPage from "./pages/SeminarDetailPage";
 import AdminHomePage from "./pages/admin/AdminHomePage";
 import ConsultationManagementPage from "./pages/admin/ConsultationManagementPage";
 import ProfileManagementPage from "./pages/admin/ProfileManagementPage";
+import SeminarManagementPage from "./pages/admin/SeminarManagementPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,10 +29,12 @@ const App = () => (
           <Route path="/home" element={<HomePage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/my" element={<MyPage />} />
+          <Route path="/seminar/:id" element={<SeminarDetailPage />} />
           {/* Admin Routes */}
           <Route path="/admin/home" element={<AdminHomePage />} />
           <Route path="/admin/consultations" element={<ConsultationManagementPage />} />
           <Route path="/admin/profile" element={<ProfileManagementPage />} />
+          <Route path="/admin/seminars" element={<SeminarManagementPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -16,7 +16,8 @@ import {
   LogOut,
   Clock,
   GraduationCap,
-  Building2
+  Building2,
+  Calendar
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
@@ -29,6 +30,23 @@ interface BookmarkWithAcademy extends Bookmark {
   academy?: Academy;
 }
 
+interface SeminarApplication {
+  id: string;
+  student_name: string;
+  student_grade: string | null;
+  attendee_count: number | null;
+  message: string | null;
+  created_at: string;
+  seminar?: {
+    title: string;
+    date: string;
+    status: "recruiting" | "closed";
+    academy?: {
+      name: string;
+    };
+  };
+}
+
 const MyPage = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
@@ -36,6 +54,7 @@ const MyPage = () => {
   const [userRole, setUserRole] = useState<string>("parent");
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [bookmarks, setBookmarks] = useState<BookmarkWithAcademy[]>([]);
+  const [seminarApplications, setSeminarApplications] = useState<SeminarApplication[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,6 +67,7 @@ const MyPage = () => {
             fetchRole(session.user.id);
             fetchConsultations(session.user.id);
             fetchBookmarks(session.user.id);
+            fetchSeminarApplications(session.user.id);
           }, 0);
         }
       }
@@ -60,6 +80,7 @@ const MyPage = () => {
         fetchRole(session.user.id);
         fetchConsultations(session.user.id);
         fetchBookmarks(session.user.id);
+        fetchSeminarApplications(session.user.id);
       } else {
         setLoading(false);
       }
@@ -133,6 +154,31 @@ const MyPage = () => {
     }
   };
 
+  const fetchSeminarApplications = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("seminar_applications")
+        .select(`
+          *,
+          seminar:seminars (
+            title,
+            date,
+            status,
+            academy:academies (
+              name
+            )
+          )
+        `)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setSeminarApplications((data as any) || []);
+    } catch (error) {
+      console.error("Error fetching seminar applications:", error);
+    }
+  };
+
   const removeBookmark = async (bookmarkId: string) => {
     try {
       const { error } = await supabase
@@ -192,12 +238,12 @@ const MyPage = () => {
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-card flex items-center justify-center shadow-soft">
               <span className="text-2xl font-bold text-primary">
-                {profile?.user_name?.charAt(0) || user?.phone?.slice(-2) || "U"}
+                {profile?.user_name?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || "U"}
               </span>
             </div>
             <div className="flex-1">
               <h2 className="text-lg font-semibold text-primary-foreground">
-                {profile?.user_name || "사용자"}
+                {profile?.user_name || user?.email?.split("@")[0] || "사용자"}
               </h2>
               <p className="text-sm text-primary-foreground/80">
                 {userRole === "parent" ? "학부모 회원" : "학원 원장님"}
@@ -221,7 +267,7 @@ const MyPage = () => {
       <main className="max-w-lg mx-auto px-4 -mt-4">
         {/* Quick Stats Card */}
         <div className="bg-card rounded-2xl p-4 shadow-card mb-6">
-          <div className="grid grid-cols-2 divide-x divide-border">
+          <div className="grid grid-cols-3 divide-x divide-border">
             <div className="text-center py-2">
               <p className="text-2xl font-bold text-primary">{bookmarks.length}</p>
               <p className="text-xs text-muted-foreground">찜한 학원</p>
@@ -230,21 +276,95 @@ const MyPage = () => {
               <p className="text-2xl font-bold text-accent">{consultations.length}</p>
               <p className="text-xs text-muted-foreground">상담 신청</p>
             </div>
+            <div className="text-center py-2">
+              <p className="text-2xl font-bold text-green-600">{seminarApplications.length}</p>
+              <p className="text-xs text-muted-foreground">설명회 신청</p>
+            </div>
           </div>
         </div>
 
         {user && (
-          <Tabs defaultValue="consultations" className="mb-6">
-            <TabsList className="w-full grid grid-cols-2">
-              <TabsTrigger value="consultations" className="gap-1">
-                <MessageSquare className="w-4 h-4" />
-                상담 내역
+          <Tabs defaultValue="seminars" className="mb-6">
+            <TabsList className="w-full grid grid-cols-3">
+              <TabsTrigger value="seminars" className="gap-1 text-xs">
+                <Calendar className="w-3 h-3" />
+                설명회
               </TabsTrigger>
-              <TabsTrigger value="bookmarks" className="gap-1">
-                <Heart className="w-4 h-4" />
-                찜한 학원
+              <TabsTrigger value="consultations" className="gap-1 text-xs">
+                <MessageSquare className="w-3 h-3" />
+                상담
+              </TabsTrigger>
+              <TabsTrigger value="bookmarks" className="gap-1 text-xs">
+                <Heart className="w-3 h-3" />
+                찜
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="seminars" className="mt-4">
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+                </div>
+              ) : seminarApplications.length === 0 ? (
+                <Card className="shadow-card border-border">
+                  <CardContent className="p-6 text-center">
+                    <Calendar className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">신청한 설명회가 없습니다</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-3"
+                      onClick={() => navigate("/explore?tab=seminars")}
+                    >
+                      설명회 찾아보기
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {seminarApplications.map((app) => (
+                    <Card 
+                      key={app.id} 
+                      className="shadow-card border-border cursor-pointer hover:shadow-soft transition-all"
+                      onClick={() => app.seminar && navigate(`/seminar/${app.id}`)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <Calendar className="w-4 h-4 text-primary" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-foreground text-sm line-clamp-1">
+                                {app.seminar?.title || "설명회"}
+                              </h4>
+                              <p className="text-xs text-muted-foreground">
+                                {app.student_name} · {app.attendee_count || 1}명
+                              </p>
+                            </div>
+                          </div>
+                          <Badge 
+                            variant={app.seminar?.status === "recruiting" ? "default" : "secondary"}
+                            className="text-xs"
+                          >
+                            {app.seminar?.status === "recruiting" ? "모집중" : "마감"}
+                          </Badge>
+                        </div>
+                        {app.seminar?.academy && (
+                          <p className="text-xs text-muted-foreground mb-1">
+                            {app.seminar.academy.name}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          <span>신청일: {formatDate(app.created_at)}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
 
             <TabsContent value="consultations" className="mt-4">
               {loading ? (
