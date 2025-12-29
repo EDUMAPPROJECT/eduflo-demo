@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Navigation, MapPin } from "lucide-react";
+import { Navigation } from "lucide-react";
 
 interface LocationMapProps {
   address: string;
@@ -7,22 +7,32 @@ interface LocationMapProps {
 }
 
 const LocationMap = ({ address, name }: LocationMapProps) => {
+  const encodedAddress = encodeURIComponent(address);
+  const googleMapsEmbedUrl = `https://www.google.com/maps?q=${encodedAddress}&output=embed`;
+
   const openNaverMap = () => {
-    const url = `https://map.naver.com/p/search/${encodeURIComponent(address)}`;
+    const url = `https://map.naver.com/p/search/${encodedAddress}`;
     window.open(url, "_blank");
   };
 
   const openKakaoMap = () => {
-    const url = `https://map.kakao.com/?q=${encodeURIComponent(address)}`;
+    const url = `https://map.kakao.com/?q=${encodedAddress}`;
     window.open(url, "_blank");
   };
 
   return (
     <div className="space-y-3">
-      <div className="w-full py-6 rounded-lg bg-secondary/30 flex flex-col items-center justify-center gap-2">
-        <MapPin className="w-8 h-8 text-primary" />
-        <span className="text-sm font-medium">{name}</span>
-        <span className="text-xs text-muted-foreground text-center px-4">{address}</span>
+      <div className="w-full h-48 rounded-lg overflow-hidden border border-border">
+        <iframe
+          src={googleMapsEmbedUrl}
+          width="100%"
+          height="100%"
+          style={{ border: 0 }}
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title={`${name} 위치`}
+        />
       </div>
       <div className="flex gap-2">
         <Button
