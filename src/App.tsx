@@ -21,6 +21,8 @@ import ConsultationManagementPage from "./pages/admin/ConsultationManagementPage
 import ProfileManagementPage from "./pages/admin/ProfileManagementPage";
 import SeminarManagementPage from "./pages/admin/SeminarManagementPage";
 import PostManagementPage from "./pages/admin/PostManagementPage";
+import AdminChatListPage from "./pages/admin/AdminChatListPage";
+import AdminChatRoomPage from "./pages/admin/AdminChatRoomPage";
 import AcademySetupPage from "./pages/academy/AcademySetupPage";
 import AcademyDashboardPage from "./pages/academy/AcademyDashboardPage";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
@@ -58,6 +60,8 @@ const App = () => {
             <Route path="/admin/profile" element={<ProtectedAdminRoute><ProfileManagementPage /></ProtectedAdminRoute>} />
             <Route path="/admin/seminars" element={<ProtectedAdminRoute><SeminarManagementPage /></ProtectedAdminRoute>} />
             <Route path="/admin/posts" element={<ProtectedAdminRoute><PostManagementPage /></ProtectedAdminRoute>} />
+            <Route path="/admin/chats" element={<ProtectedAdminRoute><AdminChatListPage /></ProtectedAdminRoute>} />
+            <Route path="/admin/chats/:id" element={<ProtectedAdminRoute><AdminChatRoomPage /></ProtectedAdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

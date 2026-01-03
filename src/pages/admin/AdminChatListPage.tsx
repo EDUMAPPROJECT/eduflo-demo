@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { useChatRooms } from "@/hooks/useChatRooms";
-import Logo from "@/components/Logo";
-import BottomNavigation from "@/components/BottomNavigation";
+import AdminBottomNavigation from "@/components/AdminBottomNavigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, GraduationCap } from "lucide-react";
+import { MessageCircle, User } from "lucide-react";
+import Logo from "@/components/Logo";
 
 const formatTime = (date: Date | null) => {
   if (!date) return "";
@@ -20,9 +20,9 @@ const formatTime = (date: Date | null) => {
   return date.toLocaleDateString("ko-KR");
 };
 
-const ChatListPage = () => {
+const AdminChatListPage = () => {
   const navigate = useNavigate();
-  const { chatRooms, loading, userId } = useChatRooms();
+  const { chatRooms, loading } = useChatRooms(true);
 
   if (loading) {
     return (
@@ -32,56 +32,27 @@ const ChatListPage = () => {
     );
   }
 
-  if (!userId) {
-    return (
-      <div className="min-h-screen bg-background">
-        <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
-          <div className="max-w-lg mx-auto px-4 h-14 flex items-center">
-            <Logo size="sm" />
-          </div>
-        </header>
-        <main className="max-w-lg mx-auto px-4 py-6">
-          <Card className="shadow-card">
-            <CardContent className="p-8 text-center">
-              <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-              <h3 className="font-semibold text-foreground mb-2">로그인이 필요합니다</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                채팅 상담을 이용하려면 로그인해주세요
-              </p>
-              <button
-                onClick={() => navigate("/auth")}
-                className="text-primary font-medium hover:underline"
-              >
-                로그인하러 가기
-              </button>
-            </CardContent>
-          </Card>
-        </main>
-        <BottomNavigation />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
       <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center">
+        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <Logo size="sm" />
+          <Badge variant="secondary" className="text-xs">관리자 모드</Badge>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="max-w-lg mx-auto px-4 py-6">
-        <h1 className="text-xl font-bold text-foreground mb-4">상담 중인 채팅</h1>
+        <h1 className="text-xl font-bold text-foreground mb-4">학부모 상담 목록</h1>
 
         {chatRooms.length === 0 ? (
           <Card className="shadow-card">
             <CardContent className="p-8 text-center">
               <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-              <h3 className="font-semibold text-foreground mb-2">진행 중인 채팅이 없습니다</h3>
+              <h3 className="font-semibold text-foreground mb-2">진행 중인 상담이 없습니다</h3>
               <p className="text-sm text-muted-foreground">
-                학원 상세 페이지에서 채팅 상담을 시작해보세요
+                학부모가 채팅 상담을 시작하면 여기에 표시됩니다
               </p>
             </CardContent>
           </Card>
@@ -91,28 +62,20 @@ const ChatListPage = () => {
               <Card
                 key={room.id}
                 className="shadow-card cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => navigate(`/chats/${room.id}`)}
+                onClick={() => navigate(`/admin/chats/${room.id}`)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    {/* Academy Logo */}
+                    {/* Parent Icon */}
                     <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center overflow-hidden shrink-0">
-                      {room.academy.profile_image ? (
-                        <img
-                          src={room.academy.profile_image}
-                          alt={room.academy.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <GraduationCap className="w-6 h-6 text-primary" />
-                      )}
+                      <User className="w-6 h-6 text-primary" />
                     </div>
 
                     {/* Chat Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <h3 className="font-semibold text-foreground truncate">
-                          {room.academy.name}
+                          학부모 상담
                         </h3>
                         {room.lastMessageAt && (
                           <span className="text-xs text-muted-foreground shrink-0 ml-2">
@@ -139,9 +102,9 @@ const ChatListPage = () => {
         )}
       </main>
 
-      <BottomNavigation />
+      <AdminBottomNavigation />
     </div>
   );
 };
 
-export default ChatListPage;
+export default AdminChatListPage;

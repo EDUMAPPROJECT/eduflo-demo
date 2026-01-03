@@ -3,7 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Send, GraduationCap } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Send, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const formatTime = (dateStr: string) => {
@@ -13,10 +14,10 @@ const formatTime = (dateStr: string) => {
   });
 };
 
-const ChatRoomPage = () => {
+const AdminChatRoomPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { messages, roomInfo, loading, userId, isAdmin, sendMessage } = useChatMessages(id);
+  const { messages, roomInfo, loading, userId, sendMessage } = useChatMessages(id);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -43,14 +44,6 @@ const ChatRoomPage = () => {
     }
   };
 
-  const handleBack = () => {
-    if (isAdmin) {
-      navigate("/admin/chats");
-    } else {
-      navigate("/chats");
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -72,21 +65,14 @@ const ChatRoomPage = () => {
       {/* Header */}
       <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={handleBack}>
+          <Button variant="ghost" size="icon" onClick={() => navigate("/admin/chats")}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
-            {roomInfo.academy.profile_image ? (
-              <img
-                src={roomInfo.academy.profile_image}
-                alt={roomInfo.academy.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <GraduationCap className="w-4 h-4 text-primary" />
-            )}
+            <User className="w-4 h-4 text-primary" />
           </div>
-          <h1 className="font-semibold text-foreground truncate">{roomInfo.academy.name}</h1>
+          <h1 className="font-semibold text-foreground truncate flex-1">학부모 상담</h1>
+          <Badge variant="secondary" className="text-xs">관리자</Badge>
         </div>
       </header>
 
@@ -95,7 +81,7 @@ const ChatRoomPage = () => {
         <div className="max-w-lg mx-auto px-4 py-4 space-y-3">
           {messages.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">메시지를 보내 상담을 시작하세요</p>
+              <p className="text-muted-foreground">아직 메시지가 없습니다</p>
             </div>
           ) : (
             messages.map((message) => {
@@ -156,4 +142,4 @@ const ChatRoomPage = () => {
   );
 };
 
-export default ChatRoomPage;
+export default AdminChatRoomPage;
