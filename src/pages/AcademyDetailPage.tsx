@@ -1,6 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useOrCreateChatRoom } from "@/hooks/useChatRooms";
 import Logo from "@/components/Logo";
 import BottomNavigation from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,7 @@ interface ClassInfo {
 const AcademyDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { getOrCreateChatRoom, loading: chatLoading } = useOrCreateChatRoom();
   const [academy, setAcademy] = useState<Academy | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [classes, setClasses] = useState<ClassInfo[]>([]);
@@ -90,6 +92,23 @@ const AcademyDetailPage = () => {
   const [studentGrade, setStudentGrade] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const handleStartChat = async () => {
+    if (!user) {
+      toast.error("로그인이 필요합니다");
+      navigate("/auth");
+      return;
+    }
+
+    if (!id) return;
+
+    const roomId = await getOrCreateChatRoom(id);
+    if (roomId) {
+      navigate(`/chats/${roomId}`);
+    } else {
+      toast.error("채팅방 생성에 실패했습니다");
+    }
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -465,10 +484,11 @@ const AcademyDetailPage = () => {
             variant="outline"
             className="flex-1 h-14 text-base gap-2"
             size="xl"
-            onClick={() => navigate(`/chats/${id}`)}
+            onClick={handleStartChat}
+            disabled={chatLoading}
           >
             <MessageCircle className="w-5 h-5" />
-            채팅 상담
+            {chatLoading ? "연결 중..." : "채팅 상담"}
           </Button>
           <Button
             className="flex-1 h-14 text-base"
