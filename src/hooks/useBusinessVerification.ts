@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface BusinessVerification {
   id: string;
@@ -19,7 +20,7 @@ export const useBusinessVerification = () => {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
 
-  const fetchVerification = async () => {
+  const fetchVerification = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
@@ -45,11 +46,56 @@ export const useBusinessVerification = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
+  // Initial fetch
   useEffect(() => {
     fetchVerification();
-  }, []);
+  }, [fetchVerification]);
+
+  // Real-time subscription for status changes
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel(`verification-${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'business_verifications',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const newVerification = payload.new as BusinessVerification;
+          const oldStatus = verification?.status;
+          const newStatus = newVerification.status;
+          
+          // Show toast notification when status changes
+          if (oldStatus !== newStatus) {
+            if (newStatus === 'approved') {
+              toast.success("🎉 사업자 인증이 승인되었습니다!", {
+                description: "이제 학원 프로필을 등록할 수 있습니다.",
+                duration: 10000,
+              });
+            } else if (newStatus === 'rejected') {
+              toast.error("사업자 인증이 거절되었습니다", {
+                description: newVerification.rejection_reason || "자세한 내용은 인증 페이지를 확인해주세요.",
+                duration: 10000,
+              });
+            }
+          }
+          
+          setVerification(newVerification);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, verification?.status]);
 
   const submitVerification = async (
     documentUrl: string,
