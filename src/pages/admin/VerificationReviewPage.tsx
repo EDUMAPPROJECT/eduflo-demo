@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import AdminHeader from "@/components/AdminHeader";
 import AdminBottomNavigation from "@/components/AdminBottomNavigation";
+import Logo from "@/components/Logo";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,11 +18,9 @@ import {
   ArrowLeft,
   Building2,
   FileText,
-  Eye,
-  ExternalLink,
-  Shield
+  Shield,
+  AlertTriangle
 } from "lucide-react";
-import Logo from "@/components/Logo";
 
 interface BusinessVerification {
   id: string;
@@ -38,6 +37,7 @@ interface BusinessVerification {
 
 const VerificationReviewPage = () => {
   const navigate = useNavigate();
+  const { isSuperAdmin, loading: superAdminLoading } = useSuperAdmin();
   const [verifications, setVerifications] = useState<BusinessVerification[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVerification, setSelectedVerification] = useState<BusinessVerification | null>(null);
@@ -67,8 +67,12 @@ const VerificationReviewPage = () => {
   };
 
   useEffect(() => {
-    fetchVerifications();
-  }, []);
+    if (!superAdminLoading && isSuperAdmin) {
+      fetchVerifications();
+    } else if (!superAdminLoading && !isSuperAdmin) {
+      setLoading(false);
+    }
+  }, [superAdminLoading, isSuperAdmin]);
 
   const sendVerificationEmail = async (
     userId: string, 
@@ -213,10 +217,45 @@ const VerificationReviewPage = () => {
     return true;
   });
 
-  if (loading) {
+  if (superAdminLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  // Access denied for non-super admins
+  if (!isSuperAdmin) {
+    return (
+      <div className="min-h-screen bg-background pb-20">
+        <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
+          <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <Logo size="sm" showText={false} />
+          </div>
+        </header>
+
+        <main className="max-w-lg mx-auto px-4 py-6">
+          <Card className="shadow-card">
+            <CardContent className="p-8 text-center">
+              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-8 h-8 text-destructive" />
+              </div>
+              <h2 className="text-xl font-bold text-foreground mb-2">접근 권한 없음</h2>
+              <p className="text-muted-foreground mb-6">
+                이 페이지는 슈퍼 관리자만 접근할 수 있습니다.
+              </p>
+              <Button onClick={() => navigate('/admin/home')}>
+                관리자 홈으로 돌아가기
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+
+        <AdminBottomNavigation />
       </div>
     );
   }
@@ -229,7 +268,12 @@ const VerificationReviewPage = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="font-semibold text-foreground">사업자 인증 심사</h1>
+          <Logo size="sm" showText={false} />
+          <div className="flex-1" />
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <Shield className="w-3 h-3" />
+            슈퍼 관리자
+          </Badge>
         </div>
       </header>
 
