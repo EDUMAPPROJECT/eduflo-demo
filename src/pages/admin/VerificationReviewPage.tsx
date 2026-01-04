@@ -68,6 +68,44 @@ const VerificationReviewPage = () => {
     fetchVerifications();
   }, []);
 
+  const sendVerificationEmail = async (
+    userId: string, 
+    businessName: string, 
+    status: 'approved' | 'rejected',
+    rejectionReason?: string
+  ) => {
+    try {
+      // Get user email from profiles
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', userId)
+        .single();
+
+      if (!profile?.email) {
+        console.log('No email found for user');
+        return;
+      }
+
+      const { error } = await supabase.functions.invoke('send-verification-email', {
+        body: {
+          email: profile.email,
+          businessName,
+          status,
+          rejectionReason,
+        },
+      });
+
+      if (error) {
+        console.error('Error sending email:', error);
+      } else {
+        console.log('Verification email sent successfully');
+      }
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+    }
+  };
+
   const handleApprove = async (verification: BusinessVerification) => {
     setProcessing(true);
     try {
@@ -86,7 +124,13 @@ const VerificationReviewPage = () => {
       } else {
         toast.success("인증이 승인되었습니다");
         fetchVerifications();
-        // TODO: Send email notification
+        
+        // Send email notification
+        sendVerificationEmail(
+          verification.user_id,
+          verification.business_name || '학원',
+          'approved'
+        );
       }
     } catch (error) {
       console.error('Error:', error);
@@ -120,10 +164,18 @@ const VerificationReviewPage = () => {
       } else {
         toast.success("인증이 거절되었습니다");
         setRejectDialogOpen(false);
-        setSelectedVerification(null);
         setRejectionReason("");
         fetchVerifications();
-        // TODO: Send email notification
+        
+        // Send email notification
+        sendVerificationEmail(
+          selectedVerification.user_id,
+          selectedVerification.business_name || '학원',
+          'rejected',
+          rejectionReason.trim()
+        );
+        
+        setSelectedVerification(null);
       }
     } catch (error) {
       console.error('Error:', error);
