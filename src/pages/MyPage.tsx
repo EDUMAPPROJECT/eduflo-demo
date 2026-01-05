@@ -19,7 +19,9 @@ import {
   GraduationCap,
   Building2,
   Calendar,
-  Pencil
+  Pencil,
+  MapPin,
+  X
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
@@ -44,6 +46,7 @@ interface SeminarApplication {
     id: string;
     title: string;
     date: string;
+    location: string | null;
     status: "recruiting" | "closed";
     academy?: {
       name: string;
@@ -190,6 +193,7 @@ const MyPage = () => {
             id,
             title,
             date,
+            location,
             status,
             academy:academies (
               name
@@ -220,6 +224,23 @@ const MyPage = () => {
     } catch (error) {
       console.error("Error removing bookmark:", error);
       toast.error("삭제에 실패했습니다");
+    }
+  };
+
+  const cancelConsultation = async (consultationId: string) => {
+    try {
+      const { error } = await supabase
+        .from("consultations")
+        .delete()
+        .eq("id", consultationId);
+
+      if (error) throw error;
+
+      setConsultations(prev => prev.filter(c => c.id !== consultationId));
+      toast.success("상담 신청이 취소되었습니다");
+    } catch (error) {
+      console.error("Error canceling consultation:", error);
+      toast.error("상담 취소에 실패했습니다");
     }
   };
 
@@ -393,9 +414,19 @@ const MyPage = () => {
                             {app.seminar.academy.name}
                           </p>
                         )}
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="w-3 h-3" />
-                          <span>신청일: {formatDate(app.created_at)}</span>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                          {app.seminar?.date && (
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              <span>{formatDate(app.seminar.date)}</span>
+                            </div>
+                          )}
+                          {app.seminar?.location && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              <span className="line-clamp-1">{app.seminar.location}</span>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -439,7 +470,21 @@ const MyPage = () => {
                               </p>
                             </div>
                           </div>
-                          {getStatusBadge(consultation.status)}
+                          <div className="flex items-center gap-2">
+                            {getStatusBadge(consultation.status)}
+                            {consultation.status === "pending" && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  cancelConsultation(consultation.id);
+                                }}
+                                className="p-1.5 hover:bg-destructive/10 rounded-full transition-colors"
+                                title="상담 취소"
+                              >
+                                <X className="w-4 h-4 text-destructive" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                         {consultation.message && (
                           <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 mb-2 line-clamp-2">
