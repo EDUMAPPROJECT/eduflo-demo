@@ -8,6 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   ChevronRight, 
   Heart, 
@@ -68,6 +78,12 @@ const MyPage = () => {
   const [seminarApplications, setSeminarApplications] = useState<SeminarApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [isNicknameDialogOpen, setIsNicknameDialogOpen] = useState(false);
+  const [cancelDialog, setCancelDialog] = useState<{
+    isOpen: boolean;
+    type: "consultation" | "seminar" | null;
+    id: string | null;
+    title: string;
+  }>({ isOpen: false, type: null, id: null, title: "" });
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -244,6 +260,36 @@ const MyPage = () => {
     }
   };
 
+  const cancelSeminarApplication = async (applicationId: string) => {
+    try {
+      const { error } = await supabase
+        .from("seminar_applications")
+        .delete()
+        .eq("id", applicationId);
+
+      if (error) throw error;
+
+      setSeminarApplications(prev => prev.filter(a => a.id !== applicationId));
+      toast.success("설명회 신청이 취소되었습니다");
+    } catch (error) {
+      console.error("Error canceling seminar application:", error);
+      toast.error("설명회 신청 취소에 실패했습니다");
+    }
+  };
+
+  const handleCancelConfirm = () => {
+    if (cancelDialog.type === "consultation" && cancelDialog.id) {
+      cancelConsultation(cancelDialog.id);
+    } else if (cancelDialog.type === "seminar" && cancelDialog.id) {
+      cancelSeminarApplication(cancelDialog.id);
+    }
+    setCancelDialog({ isOpen: false, type: null, id: null, title: "" });
+  };
+
+  const openCancelDialog = (type: "consultation" | "seminar", id: string, title: string) => {
+    setCancelDialog({ isOpen: true, type, id, title });
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast.success("로그아웃되었습니다");
@@ -402,12 +448,24 @@ const MyPage = () => {
                               </p>
                             </div>
                           </div>
-                          <Badge 
-                            variant={app.seminar?.status === "recruiting" ? "default" : "secondary"}
-                            className="text-xs"
-                          >
-                            {app.seminar?.status === "recruiting" ? "모집중" : "마감"}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge 
+                              variant={app.seminar?.status === "recruiting" ? "default" : "secondary"}
+                              className="text-xs"
+                            >
+                              {app.seminar?.status === "recruiting" ? "모집중" : "마감"}
+                            </Badge>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openCancelDialog("seminar", app.id, app.seminar?.title || "설명회");
+                              }}
+                              className="p-1.5 hover:bg-destructive/10 rounded-full transition-colors"
+                              title="신청 취소"
+                            >
+                              <X className="w-4 h-4 text-destructive" />
+                            </button>
+                          </div>
                         </div>
                         {app.seminar?.academy && (
                           <p className="text-xs text-muted-foreground mb-1">
@@ -476,7 +534,7 @@ const MyPage = () => {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  cancelConsultation(consultation.id);
+                                  openCancelDialog("consultation", consultation.id, consultation.academy?.name || "학원");
                                 }}
                                 className="p-1.5 hover:bg-destructive/10 rounded-full transition-colors"
                                 title="상담 취소"
@@ -602,6 +660,30 @@ const MyPage = () => {
             onSuccess={(newNickname) => setProfile((prev: any) => ({ ...prev, user_name: newNickname }))}
           />
         )}
+        {/* Cancel Confirmation Dialog */}
+        <AlertDialog open={cancelDialog.isOpen} onOpenChange={(open) => !open && setCancelDialog({ isOpen: false, type: null, id: null, title: "" })}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {cancelDialog.type === "seminar" ? "설명회 신청 취소" : "상담 신청 취소"}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {cancelDialog.type === "seminar" 
+                  ? `"${cancelDialog.title}" 설명회 신청을 취소하시겠습니까?`
+                  : `"${cancelDialog.title}" 상담 신청을 취소하시겠습니까?`
+                }
+                <br />
+                취소한 신청은 복구할 수 없습니다.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>돌아가기</AlertDialogCancel>
+              <AlertDialogAction onClick={handleCancelConfirm} className="bg-destructive hover:bg-destructive/90">
+                취소하기
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
 
       <BottomNavigation />
