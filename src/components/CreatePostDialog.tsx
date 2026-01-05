@@ -18,8 +18,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import MultiImageUpload from "@/components/MultiImageUpload";
-import { Bell, Calendar, PartyPopper, Loader2 } from "lucide-react";
+import { Bell, Calendar, PartyPopper, Loader2, Link2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+interface Seminar {
+  id: string;
+  title: string;
+  date: string;
+  status: string;
+}
 
 interface CreatePostDialogProps {
   open: boolean;
@@ -42,25 +49,46 @@ const CreatePostDialog = ({ open, onOpenChange, academyId, onSuccess }: CreatePo
   const [body, setBody] = useState('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [targetRegions, setTargetRegions] = useState<string[]>([]);
+  const [seminars, setSeminars] = useState<Seminar[]>([]);
+  const [selectedSeminarId, setSelectedSeminarId] = useState<string>('');
 
-  // Get academy's target regions
+  // Get academy's target regions and seminars
   useEffect(() => {
-    const fetchAcademyRegions = async () => {
-      const { data } = await supabase
+    const fetchData = async () => {
+      // Fetch academy regions
+      const { data: academyData } = await supabase
         .from("academies")
         .select("target_regions")
         .eq("id", academyId)
         .single();
       
-      if (data?.target_regions) {
-        setTargetRegions(data.target_regions);
+      if (academyData?.target_regions) {
+        setTargetRegions(academyData.target_regions);
+      }
+
+      // Fetch academy's seminars
+      const { data: seminarData } = await supabase
+        .from("seminars")
+        .select("id, title, date, status")
+        .eq("academy_id", academyId)
+        .order("date", { ascending: false });
+      
+      if (seminarData) {
+        setSeminars(seminarData);
       }
     };
 
     if (open && academyId) {
-      fetchAcademyRegions();
+      fetchData();
     }
   }, [open, academyId]);
+
+  // Reset seminar selection when type changes
+  useEffect(() => {
+    if (type === 'notice') {
+      setSelectedSeminarId('');
+    }
+  }, [type]);
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -70,13 +98,24 @@ const CreatePostDialog = ({ open, onOpenChange, academyId, onSuccess }: CreatePo
 
     setLoading(true);
     try {
+      // Build body with seminar link if selected
+      let finalBody = body.trim();
+      if (selectedSeminarId && (type === 'seminar' || type === 'event')) {
+        const seminar = seminars.find(s => s.id === selectedSeminarId);
+        if (seminar) {
+          finalBody = finalBody 
+            ? `${finalBody}\n\n📌 연결된 설명회: ${seminar.title}`
+            : `📌 연결된 설명회: ${seminar.title}`;
+        }
+      }
+
       const { error } = await supabase
         .from("feed_posts")
         .insert({
           academy_id: academyId,
           type,
           title: title.trim(),
-          body: body.trim() || null,
+          body: finalBody || null,
           image_url: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
           target_regions: targetRegions,
         });
@@ -88,6 +127,7 @@ const CreatePostDialog = ({ open, onOpenChange, academyId, onSuccess }: CreatePo
       setTitle('');
       setBody('');
       setImageUrls([]);
+      setSelectedSeminarId('');
       
       onSuccess();
     } catch (error) {
@@ -96,6 +136,16 @@ const CreatePostDialog = ({ open, onOpenChange, academyId, onSuccess }: CreatePo
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatSeminarDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("ko-KR", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   return (
@@ -130,6 +180,37 @@ const CreatePostDialog = ({ open, onOpenChange, academyId, onSuccess }: CreatePo
               </SelectContent>
             </Select>
           </div>
+
+          {/* Seminar Link - shown for seminar and event types */}
+          {(type === 'seminar' || type === 'event') && seminars.length > 0 && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Link2 className="w-4 h-4" />
+                설명회 연결 (선택)
+              </Label>
+              <Select value={selectedSeminarId} onValueChange={setSelectedSeminarId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="연결할 설명회를 선택하세요" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">연결 안함</SelectItem>
+                  {seminars.map((seminar) => (
+                    <SelectItem key={seminar.id} value={seminar.id}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{seminar.title}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatSeminarDate(seminar.date)} · {seminar.status === 'recruiting' ? '모집중' : '마감'}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                연결된 설명회는 소식 본문에 링크로 표시됩니다
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>제목 *</Label>

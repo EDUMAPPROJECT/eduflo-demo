@@ -100,11 +100,11 @@ const CustomerServicePage = () => {
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Mail className="w-4 h-4" />
-                <span>support@edumap.kr</span>
+                <span>edumap365@gmail.com</span>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Phone className="w-4 h-4" />
-                <span>1588-0000</span>
+                <span>010-8980-0282</span>
               </div>
             </div>
           </CardContent>
