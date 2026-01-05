@@ -5,7 +5,8 @@ import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import AdminBottomNavigation from "@/components/AdminBottomNavigation";
 import Logo from "@/components/Logo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquare, Eye, TrendingUp, Calendar, Shield } from "lucide-react";
+import { MessageSquare, Eye, TrendingUp, Calendar, Shield, Megaphone, CalendarDays } from "lucide-react";
+
 const AdminHomePage = () => {
   const navigate = useNavigate();
   const { isSuperAdmin } = useSuperAdmin();
@@ -136,6 +137,40 @@ const AdminHomePage = () => {
         <section>
           <h3 className="font-semibold text-foreground mb-4">빠른 실행</h3>
           <div className="space-y-3">
+            <Card 
+              className="shadow-card border-border cursor-pointer hover:shadow-soft transition-all duration-200"
+              onClick={() => navigate("/admin/seminars")}
+            >
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
+                  <CalendarDays className="w-6 h-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-foreground">설명회 관리</h4>
+                  <p className="text-sm text-muted-foreground">
+                    설명회 일정을 등록하고 관리하세요
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="shadow-card border-border cursor-pointer hover:shadow-soft transition-all duration-200"
+              onClick={() => navigate("/admin/posts")}
+            >
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
+                  <Megaphone className="w-6 h-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-foreground">소식 관리</h4>
+                  <p className="text-sm text-muted-foreground">
+                    학원 소식을 작성하고 관리하세요
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card 
               className="shadow-card border-border cursor-pointer hover:shadow-soft transition-all duration-200"
               onClick={() => navigate("/admin/consultations")}
