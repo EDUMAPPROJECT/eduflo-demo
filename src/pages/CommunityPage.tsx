@@ -8,7 +8,6 @@ import BottomNavigation from "@/components/BottomNavigation";
 import Logo from "@/components/Logo";
 import GlobalRegionSelector from "@/components/GlobalRegionSelector";
 import FeedPostCard from "@/components/FeedPostCard";
-import CreatePostDialog from "@/components/CreatePostDialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
@@ -18,7 +17,6 @@ import {
   Calendar, 
   Bookmark, 
   Search,
-  Plus,
   Loader2
 } from "lucide-react";
 
@@ -58,9 +56,6 @@ const CommunityPage = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [userId, setUserId] = useState<string | null>(null);
   const [bookmarkedAcademies, setBookmarkedAcademies] = useState<string[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [academyId, setAcademyId] = useState<string | null>(null);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   // Fetch function for infinite scroll
   const fetchPosts = useCallback(async (page: number): Promise<{ data: FeedPost[]; hasMore: boolean }> => {
@@ -127,18 +122,6 @@ const CommunityPage = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUserId(session.user.id);
-        
-        // Check if user is admin with an academy
-        const { data: academy } = await supabase
-          .from("academies")
-          .select("id")
-          .eq("owner_id", session.user.id)
-          .maybeSingle();
-        
-        if (academy) {
-          setIsAdmin(true);
-          setAcademyId(academy.id);
-        }
 
         // Get bookmarked academies
         const { data: bookmarks } = await supabase
@@ -195,11 +178,6 @@ const CommunityPage = () => {
     }
   };
 
-  const handlePostCreated = () => {
-    setIsCreateDialogOpen(false);
-    reset();
-    toast({ title: "등록 완료", description: "소식이 등록되었습니다" });
-  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -312,25 +290,6 @@ const CommunityPage = () => {
           </div>
         )}
       </main>
-
-      {/* FAB for Admin */}
-      {isAdmin && academyId && (
-        <button
-          onClick={() => setIsCreateDialogOpen(true)}
-          className="fixed bottom-24 right-4 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center z-40 hover:bg-primary/90 transition-colors"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
-      )}
-
-      {isAdmin && academyId && (
-        <CreatePostDialog
-          open={isCreateDialogOpen}
-          onOpenChange={setIsCreateDialogOpen}
-          academyId={academyId}
-          onSuccess={handlePostCreated}
-        />
-      )}
 
       <BottomNavigation />
     </div>

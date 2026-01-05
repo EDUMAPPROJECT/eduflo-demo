@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Heart, Share2, ChevronRight, Bell, Calendar, PartyPopper } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -5,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import ImageViewer from "@/components/ImageViewer";
 
 interface FeedPost {
   id: string;
@@ -38,6 +40,8 @@ const typeConfig = {
 const FeedPostCard = ({ post, onLikeToggle, onAcademyClick }: FeedPostCardProps) => {
   const config = typeConfig[post.type];
   const TypeIcon = config.icon;
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   // Parse image URLs - support both single URL string and JSON array
   const getImageUrls = (): string[] => {
@@ -53,6 +57,11 @@ const FeedPostCard = ({ post, onLikeToggle, onAcademyClick }: FeedPostCardProps)
   };
 
   const imageUrls = getImageUrls();
+
+  const handleImageClick = (index: number) => {
+    setViewerIndex(index);
+    setViewerOpen(true);
+  };
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -128,12 +137,17 @@ const FeedPostCard = ({ post, onLikeToggle, onAcademyClick }: FeedPostCardProps)
             <img
               src={imageUrls[0]}
               alt={post.title}
-              className="w-full h-48 object-cover rounded-lg"
+              className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={() => handleImageClick(0)}
             />
           ) : (
             <div className="grid grid-cols-2 gap-1.5">
               {imageUrls.slice(0, 4).map((url, index) => (
-                <div key={index} className="relative aspect-square rounded-lg overflow-hidden">
+                <div 
+                  key={index} 
+                  className="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => handleImageClick(index)}
+                >
                   <img
                     src={url}
                     alt={`${post.title} ${index + 1}`}
@@ -150,6 +164,14 @@ const FeedPostCard = ({ post, onLikeToggle, onAcademyClick }: FeedPostCardProps)
           )}
         </div>
       )}
+
+      {/* Image Viewer */}
+      <ImageViewer
+        images={imageUrls}
+        initialIndex={viewerIndex}
+        open={viewerOpen}
+        onClose={() => setViewerOpen(false)}
+      />
 
       {/* Actions */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-border">

@@ -501,8 +501,8 @@ const MyPage = () => {
 
         {/* Menu List */}
         <div className="bg-card rounded-2xl shadow-card overflow-hidden">
-          <MenuItemButton icon={Settings} label="설정" />
-          <MenuItemButton icon={HelpCircle} label="고객센터" />
+          <MenuItemButton icon={Settings} label="설정" onClick={() => navigate("/settings")} />
+          <MenuItemButton icon={HelpCircle} label="고객센터" onClick={() => navigate("/customer-service")} />
           {user && (
             <MenuItemButton 
               icon={LogOut} 
