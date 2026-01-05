@@ -39,6 +39,21 @@ const FeedPostCard = ({ post, onLikeToggle, onAcademyClick }: FeedPostCardProps)
   const config = typeConfig[post.type];
   const TypeIcon = config.icon;
 
+  // Parse image URLs - support both single URL string and JSON array
+  const getImageUrls = (): string[] => {
+    if (!post.image_url) return [];
+    try {
+      // Try parsing as JSON array first
+      const parsed = JSON.parse(post.image_url);
+      return Array.isArray(parsed) ? parsed : [post.image_url];
+    } catch {
+      // If not JSON, treat as single URL
+      return [post.image_url];
+    }
+  };
+
+  const imageUrls = getImageUrls();
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -106,14 +121,33 @@ const FeedPostCard = ({ post, onLikeToggle, onAcademyClick }: FeedPostCardProps)
         )}
       </div>
 
-      {/* Image */}
-      {post.image_url && (
+      {/* Images Gallery */}
+      {imageUrls.length > 0 && (
         <div className="px-4 pb-3">
-          <img
-            src={post.image_url}
-            alt={post.title}
-            className="w-full h-48 object-cover rounded-lg"
-          />
+          {imageUrls.length === 1 ? (
+            <img
+              src={imageUrls[0]}
+              alt={post.title}
+              className="w-full h-48 object-cover rounded-lg"
+            />
+          ) : (
+            <div className="grid grid-cols-2 gap-1.5">
+              {imageUrls.slice(0, 4).map((url, index) => (
+                <div key={index} className="relative aspect-square rounded-lg overflow-hidden">
+                  <img
+                    src={url}
+                    alt={`${post.title} ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  {index === 3 && imageUrls.length > 4 && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <span className="text-white font-semibold">+{imageUrls.length - 4}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

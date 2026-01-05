@@ -156,14 +156,14 @@ const AdminHomePage = () => {
 
             <Card 
               className="shadow-card border-border cursor-pointer hover:shadow-soft transition-all duration-200"
-              onClick={() => navigate("/admin/posts")}
+              onClick={() => navigate("/admin/feed-posts")}
             >
               <CardContent className="p-4 flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
                   <Megaphone className="w-6 h-6 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-foreground">소식 관리</h4>
+                  <h4 className="font-medium text-foreground">내 소식 관리</h4>
                   <p className="text-sm text-muted-foreground">
                     학원 소식을 작성하고 관리하세요
                   </p>

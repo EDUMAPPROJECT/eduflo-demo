@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import ImageUpload from "@/components/ImageUpload";
+import MultiImageUpload from "@/components/MultiImageUpload";
 import { Bell, Calendar, PartyPopper, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -40,7 +40,7 @@ const CreatePostDialog = ({ open, onOpenChange, academyId, onSuccess }: CreatePo
   const [type, setType] = useState<string>('notice');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [targetRegions, setTargetRegions] = useState<string[]>([]);
 
   // Get academy's target regions
@@ -77,7 +77,7 @@ const CreatePostDialog = ({ open, onOpenChange, academyId, onSuccess }: CreatePo
           type,
           title: title.trim(),
           body: body.trim() || null,
-          image_url: imageUrl || null,
+          image_url: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
           target_regions: targetRegions,
         });
 
@@ -87,7 +87,7 @@ const CreatePostDialog = ({ open, onOpenChange, academyId, onSuccess }: CreatePo
       setType('notice');
       setTitle('');
       setBody('');
-      setImageUrl('');
+      setImageUrls([]);
       
       onSuccess();
     } catch (error) {
@@ -159,11 +159,12 @@ const CreatePostDialog = ({ open, onOpenChange, academyId, onSuccess }: CreatePo
           </div>
 
           <div className="space-y-2">
-            <Label>이미지 (선택)</Label>
-            <ImageUpload
-              value={imageUrl}
-              onChange={setImageUrl}
+            <Label>이미지 (선택, 최대 5장)</Label>
+            <MultiImageUpload
+              values={imageUrls}
+              onChange={setImageUrls}
               folder="feed-posts"
+              maxImages={5}
             />
           </div>
 

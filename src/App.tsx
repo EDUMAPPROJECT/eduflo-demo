@@ -23,6 +23,7 @@ import ConsultationManagementPage from "./pages/admin/ConsultationManagementPage
 import ProfileManagementPage from "./pages/admin/ProfileManagementPage";
 import SeminarManagementPage from "./pages/admin/SeminarManagementPage";
 import PostManagementPage from "./pages/admin/PostManagementPage";
+import FeedPostManagementPage from "./pages/admin/FeedPostManagementPage";
 import AdminChatListPage from "./pages/admin/AdminChatListPage";
 import AdminChatRoomPage from "./pages/admin/AdminChatRoomPage";
 import AdminCommunityPage from "./pages/admin/AdminCommunityPage";
@@ -71,6 +72,7 @@ const App = () => {
               <Route path="/admin/profile" element={<ProtectedAdminRoute><ProfileManagementPage /></ProtectedAdminRoute>} />
               <Route path="/admin/seminars" element={<ProtectedAdminRoute><SeminarManagementPage /></ProtectedAdminRoute>} />
               <Route path="/admin/posts" element={<ProtectedAdminRoute><PostManagementPage /></ProtectedAdminRoute>} />
+              <Route path="/admin/feed-posts" element={<ProtectedAdminRoute><FeedPostManagementPage /></ProtectedAdminRoute>} />
               <Route path="/admin/chats" element={<ProtectedAdminRoute><AdminChatListPage /></ProtectedAdminRoute>} />
               <Route path="/admin/chats/:id" element={<ProtectedAdminRoute><AdminChatRoomPage /></ProtectedAdminRoute>} />
               <Route path="/admin/community" element={<ProtectedAdminRoute><AdminCommunityPage /></ProtectedAdminRoute>} />

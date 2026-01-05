@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useRegion } from "@/contexts/RegionContext";
 import { useToast } from "@/hooks/use-toast";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import BottomNavigation from "@/components/BottomNavigation";
 import Logo from "@/components/Logo";
 import GlobalRegionSelector from "@/components/GlobalRegionSelector";
@@ -10,7 +11,6 @@ import FeedPostCard from "@/components/FeedPostCard";
 import CreatePostDialog from "@/components/CreatePostDialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { 
   Newspaper, 
   Bell, 
@@ -18,10 +18,9 @@ import {
   Calendar, 
   Bookmark, 
   Search,
-  Plus
+  Plus,
+  Loader2
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { ko } from "date-fns/locale";
 
 interface FeedPost {
   id: string;
@@ -41,6 +40,8 @@ interface FeedPost {
   is_liked?: boolean;
 }
 
+const PAGE_SIZE = 15;
+
 const filterOptions = [
   { id: 'all', label: '전체', icon: null },
   { id: 'notice', label: '공지', icon: Bell },
@@ -52,16 +53,74 @@ const filterOptions = [
 const CommunityPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { selectedRegion, selectedRegionName } = useRegion();
+  const { selectedRegion } = useRegion();
   
-  const [posts, setPosts] = useState<FeedPost[]>([]);
-  const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
   const [userId, setUserId] = useState<string | null>(null);
   const [bookmarkedAcademies, setBookmarkedAcademies] = useState<string[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [academyId, setAcademyId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  // Fetch function for infinite scroll
+  const fetchPosts = useCallback(async (page: number): Promise<{ data: FeedPost[]; hasMore: boolean }> => {
+    try {
+      let query = supabase
+        .from("feed_posts")
+        .select(`
+          *,
+          academy:academies!inner(id, name, profile_image, target_regions)
+        `)
+        .contains("target_regions", [selectedRegion])
+        .order("created_at", { ascending: false })
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+      if (activeFilter !== 'all' && activeFilter !== 'bookmarked') {
+        query = query.eq("type", activeFilter);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      let posts = (data || []) as unknown as FeedPost[];
+
+      // Filter by bookmarked academies if needed
+      if (activeFilter === 'bookmarked') {
+        posts = posts.filter(post => bookmarkedAcademies.includes(post.academy_id));
+      }
+
+      // Check which posts the user has liked
+      if (userId && posts.length > 0) {
+        const postIds = posts.map(p => p.id);
+        const { data: likes } = await supabase
+          .from("post_likes")
+          .select("post_id")
+          .eq("user_id", userId)
+          .in("post_id", postIds);
+
+        const likedPostIds = new Set(likes?.map(l => l.post_id) || []);
+        posts = posts.map(post => ({
+          ...post,
+          is_liked: likedPostIds.has(post.id)
+        }));
+      }
+
+      return { data: posts, hasMore: posts.length === PAGE_SIZE };
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+      return { data: [], hasMore: false };
+    }
+  }, [selectedRegion, activeFilter, bookmarkedAcademies, userId]);
+
+  const {
+    items: posts,
+    setItems: setPosts,
+    loading,
+    loadingMore,
+    hasMore,
+    reset,
+    setLoadMoreElement
+  } = useInfiniteScroll<FeedPost>({ fetchFn: fetchPosts, pageSize: PAGE_SIZE });
 
   useEffect(() => {
     const init = async () => {
@@ -95,64 +154,10 @@ const CommunityPage = () => {
     init();
   }, []);
 
-  const fetchPosts = useCallback(async () => {
-    setLoading(true);
-    try {
-      let query = supabase
-        .from("feed_posts")
-        .select(`
-          *,
-          academy:academies!inner(id, name, profile_image, target_regions)
-        `)
-        .contains("target_regions", [selectedRegion])
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      if (activeFilter !== 'all' && activeFilter !== 'bookmarked') {
-        query = query.eq("type", activeFilter);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      let filteredPosts = (data || []) as unknown as FeedPost[];
-
-      // Filter by bookmarked academies if needed
-      if (activeFilter === 'bookmarked') {
-        filteredPosts = filteredPosts.filter(post => 
-          bookmarkedAcademies.includes(post.academy_id)
-        );
-      }
-
-      // Check which posts the user has liked
-      if (userId && filteredPosts.length > 0) {
-        const postIds = filteredPosts.map(p => p.id);
-        const { data: likes } = await supabase
-          .from("post_likes")
-          .select("post_id")
-          .eq("user_id", userId)
-          .in("post_id", postIds);
-
-        const likedPostIds = new Set(likes?.map(l => l.post_id) || []);
-        filteredPosts = filteredPosts.map(post => ({
-          ...post,
-          is_liked: likedPostIds.has(post.id)
-        }));
-      }
-
-      setPosts(filteredPosts);
-    } catch (error) {
-      console.error("Error fetching posts:", error);
-      toast({ title: "오류", description: "소식을 불러오지 못했습니다", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedRegion, activeFilter, bookmarkedAcademies, userId, toast]);
-
+  // Reset and refetch when filter or region changes
   useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+    reset();
+  }, [selectedRegion, activeFilter, reset]);
 
   const handleLikeToggle = async (postId: string, isLiked: boolean) => {
     if (!userId) {
@@ -192,7 +197,7 @@ const CommunityPage = () => {
 
   const handlePostCreated = () => {
     setIsCreateDialogOpen(false);
-    fetchPosts();
+    reset();
     toast({ title: "등록 완료", description: "소식이 등록되었습니다" });
   };
 
@@ -242,7 +247,7 @@ const CommunityPage = () => {
 
       {/* Content */}
       <main className="max-w-lg mx-auto px-4 py-4">
-        {loading ? (
+        {loading && posts.length === 0 ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="p-4 bg-card rounded-xl border border-border">
@@ -291,6 +296,19 @@ const CommunityPage = () => {
                 onAcademyClick={(id) => navigate(`/academy/${id}`)}
               />
             ))}
+            
+            {/* Infinite scroll trigger */}
+            <div ref={setLoadMoreElement} className="py-4 flex justify-center">
+              {loadingMore && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm">불러오는 중...</span>
+                </div>
+              )}
+              {!hasMore && posts.length > 0 && (
+                <p className="text-sm text-muted-foreground">모든 소식을 불러왔습니다</p>
+              )}
+            </div>
           </div>
         )}
       </main>

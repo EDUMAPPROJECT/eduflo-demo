@@ -78,18 +78,23 @@ const ChatRoomPage = () => {
           <Button variant="ghost" size="icon" onClick={handleBack}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
-            {roomInfo.academy.profile_image ? (
-              <img
-                src={roomInfo.academy.profile_image}
-                alt={roomInfo.academy.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <GraduationCap className="w-4 h-4 text-primary" />
-            )}
-          </div>
-          <h1 className="font-semibold text-foreground truncate">{roomInfo.academy.name}</h1>
+          <button 
+            className="flex items-center gap-2 flex-1 min-w-0"
+            onClick={() => navigate(`/academy/${roomInfo.academy.id}`)}
+          >
+            <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center overflow-hidden shrink-0">
+              {roomInfo.academy.profile_image ? (
+                <img
+                  src={roomInfo.academy.profile_image}
+                  alt={roomInfo.academy.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <GraduationCap className="w-4 h-4 text-primary" />
+              )}
+            </div>
+            <h1 className="font-semibold text-foreground truncate">{roomInfo.academy.name}</h1>
+          </button>
         </div>
       </header>
 
