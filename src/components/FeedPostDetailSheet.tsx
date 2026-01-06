@@ -1,13 +1,25 @@
-import { useState } from "react";
-import { Heart, Share2, ChevronRight, ChevronLeft, Bell, Calendar, PartyPopper, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Heart, Share2, ChevronRight, ChevronLeft, Bell, Calendar, PartyPopper, X, Trash2 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import ImageViewer from "@/components/ImageViewer";
 import useEmblaCarousel from "embla-carousel-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface FeedPost {
   id: string;
@@ -34,6 +46,7 @@ interface FeedPostDetailSheetProps {
   onLikeToggle: (postId: string, isLiked: boolean) => void;
   onAcademyClick: (academyId: string) => void;
   onSeminarClick?: (seminarId: string) => void;
+  onDelete?: (postId: string) => void;
 }
 
 const typeConfig = {
