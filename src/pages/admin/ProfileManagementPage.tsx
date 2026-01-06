@@ -8,6 +8,7 @@ import ImageUpload from "@/components/ImageUpload";
 import NicknameSettingsDialog from "@/components/NicknameSettingsDialog";
 import TargetRegionSelector from "@/components/TargetRegionSelector";
 import AcademyTargetTagsEditor from "@/components/AcademyTargetTagsEditor";
+import CurriculumEditor from "@/components/CurriculumEditor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +67,11 @@ interface Teacher {
   image_url: string | null;
 }
 
+interface CurriculumStep {
+  title: string;
+  description: string;
+}
+
 interface Class {
   id: string;
   name: string;
@@ -75,6 +81,7 @@ interface Class {
   description: string | null;
   teacher_id: string | null;
   is_recruiting: boolean | null;
+  curriculum?: CurriculumStep[];
 }
 
 const ProfileManagementPage = () => {
@@ -120,6 +127,7 @@ const ProfileManagementPage = () => {
   const [classFee, setClassFee] = useState("");
   const [classDescription, setClassDescription] = useState("");
   const [classTeacherId, setClassTeacherId] = useState("");
+  const [classCurriculum, setClassCurriculum] = useState<CurriculumStep[]>([]);
 
   const { toast } = useToast();
 
@@ -194,7 +202,13 @@ const ProfileManagementPage = () => {
       .select("*")
       .eq("academy_id", academyId)
       .order("created_at");
-    setClasses((data as Class[]) || []);
+    
+    // Parse curriculum JSON for each class
+    const classesWithCurriculum = (data || []).map((cls: any) => ({
+      ...cls,
+      curriculum: Array.isArray(cls.curriculum) ? cls.curriculum : []
+    })) as Class[];
+    setClasses(classesWithCurriculum);
   };
 
   const handleAddTag = () => {
@@ -338,6 +352,7 @@ const ProfileManagementPage = () => {
     setClassFee("");
     setClassDescription("");
     setClassTeacherId("");
+    setClassCurriculum([]);
     setEditingClass(null);
   };
 
@@ -350,6 +365,7 @@ const ProfileManagementPage = () => {
       setClassFee(cls.fee?.toString() || "");
       setClassDescription(cls.description || "");
       setClassTeacherId(cls.teacher_id || "");
+      setClassCurriculum(cls.curriculum || []);
     } else {
       resetClassForm();
     }
@@ -367,12 +383,13 @@ const ProfileManagementPage = () => {
         fee: classFee ? parseInt(classFee) : null,
         description: classDescription || null,
         teacher_id: classTeacherId || null,
+        curriculum: classCurriculum as unknown as any,
       };
 
       if (editingClass) {
         await supabase.from("classes").update(classData).eq("id", editingClass.id);
       } else {
-        await supabase.from("classes").insert({ ...classData, academy_id: academy.id });
+        await supabase.from("classes").insert([{ ...classData, academy_id: academy.id }]);
       }
 
       toast({ title: "저장 완료" });
@@ -821,6 +838,15 @@ const ProfileManagementPage = () => {
                     <Label>설명</Label>
                     <Textarea value={classDescription} onChange={(e) => setClassDescription(e.target.value)} rows={3} />
                   </div>
+                  
+                  {/* Curriculum Editor */}
+                  <div className="border-t pt-4">
+                    <CurriculumEditor
+                      curriculum={classCurriculum}
+                      onChange={setClassCurriculum}
+                    />
+                  </div>
+                  
                   <Button className="w-full" onClick={handleSaveClass}>
                     저장
                   </Button>

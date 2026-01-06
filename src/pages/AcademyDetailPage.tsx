@@ -64,6 +64,11 @@ interface Teacher {
   image_url: string | null;
 }
 
+interface CurriculumStep {
+  title: string;
+  description: string;
+}
+
 interface ClassInfo {
   id: string;
   name: string;
@@ -72,6 +77,7 @@ interface ClassInfo {
   fee: number | null;
   description: string | null;
   is_recruiting: boolean | null;
+  curriculum?: CurriculumStep[];
   teacher?: {
     name: string;
   };
@@ -234,7 +240,13 @@ const AcademyDetailPage = () => {
       `)
       .eq("academy_id", id)
       .order("created_at");
-    setClasses((data as any) || []);
+    
+    // Parse curriculum JSON for each class
+    const classesWithCurriculum = (data || []).map((cls: any) => ({
+      ...cls,
+      curriculum: cls.curriculum || []
+    }));
+    setClasses(classesWithCurriculum);
   };
 
   const checkBookmark = async (userId: string, academyId: string) => {
@@ -643,30 +655,49 @@ const AcademyDetailPage = () => {
                     커리큘럼
                   </h4>
                   <div className="space-y-2 bg-secondary/30 rounded-lg p-3">
-                    <div className="flex items-start gap-2">
-                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                        <span className="text-xs font-bold text-primary">1</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">기초 개념 정립 및 원리 이해</p>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                        <span className="text-xs font-bold text-primary">2</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">유형별 문제 풀이 및 심화 학습</p>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                        <span className="text-xs font-bold text-primary">3</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">실전 모의고사 및 취약점 보완</p>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                        <span className="text-xs font-bold text-primary">4</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">1:1 클리닉 및 개인별 피드백</p>
-                    </div>
+                    {(selectedClass.curriculum && selectedClass.curriculum.length > 0) ? (
+                      selectedClass.curriculum.map((step, idx) => (
+                        <div key={idx} className="flex items-start gap-2">
+                          <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="text-xs font-bold text-primary">{idx + 1}</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{step.title}</p>
+                            {step.description && (
+                              <p className="text-xs text-muted-foreground">{step.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      // Default curriculum when none is set
+                      <>
+                        <div className="flex items-start gap-2">
+                          <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="text-xs font-bold text-primary">1</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">기초 개념 정립 및 원리 이해</p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="text-xs font-bold text-primary">2</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">유형별 문제 풀이 및 심화 학습</p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="text-xs font-bold text-primary">3</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">실전 모의고사 및 취약점 보완</p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="text-xs font-bold text-primary">4</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">1:1 클리닉 및 개인별 피드백</p>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 

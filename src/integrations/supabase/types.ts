@@ -211,6 +211,7 @@ export type Database = {
         Row: {
           academy_id: string
           created_at: string
+          curriculum: Json | null
           description: string | null
           fee: number | null
           id: string
@@ -224,6 +225,7 @@ export type Database = {
         Insert: {
           academy_id: string
           created_at?: string
+          curriculum?: Json | null
           description?: string | null
           fee?: number | null
           id?: string
@@ -237,6 +239,7 @@ export type Database = {
         Update: {
           academy_id?: string
           created_at?: string
+          curriculum?: Json | null
           description?: string | null
           fee?: number | null
           id?: string
