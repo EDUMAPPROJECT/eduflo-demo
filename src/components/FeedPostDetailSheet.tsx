@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Heart, Share2, ChevronRight, Bell, Calendar, PartyPopper, X } from "lucide-react";
+import { Heart, Share2, ChevronRight, ChevronLeft, Bell, Calendar, PartyPopper, X } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { format, formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import ImageViewer from "@/components/ImageViewer";
+import useEmblaCarousel from "embla-carousel-react";
 
 interface FeedPost {
   id: string;
@@ -31,6 +32,7 @@ interface FeedPostDetailSheetProps {
   onClose: () => void;
   onLikeToggle: (postId: string, isLiked: boolean) => void;
   onAcademyClick: (academyId: string) => void;
+  onSeminarClick?: (academyId: string) => void;
 }
 
 const typeConfig = {
@@ -44,10 +46,13 @@ const FeedPostDetailSheet = ({
   open, 
   onClose, 
   onLikeToggle, 
-  onAcademyClick 
+  onAcademyClick,
+  onSeminarClick
 }: FeedPostDetailSheetProps) => {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false });
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   if (!post) return null;
 
@@ -72,6 +77,14 @@ const FeedPostDetailSheet = ({
     setViewerOpen(true);
   };
 
+  const scrollPrev = () => emblaApi?.scrollPrev();
+  const scrollNext = () => emblaApi?.scrollNext();
+
+  // Update current slide on scroll
+  emblaApi?.on('select', () => {
+    setCurrentSlide(emblaApi.selectedScrollSnap());
+  });
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -89,6 +102,13 @@ const FeedPostDetailSheet = ({
   const handleAcademyClick = () => {
     onClose();
     onAcademyClick(post.academy.id);
+  };
+
+  const handleSeminarClick = () => {
+    onClose();
+    if (onSeminarClick) {
+      onSeminarClick(post.academy.id);
+    }
   };
 
   return (
@@ -144,34 +164,71 @@ const FeedPostDetailSheet = ({
                 {post.title}
               </SheetTitle>
 
-              {/* Images Gallery */}
+              {/* Images Carousel */}
               {imageUrls.length > 0 && (
-                <div className="mb-4">
-                  {imageUrls.length === 1 ? (
-                    <img
-                      src={imageUrls[0]}
-                      alt={post.title}
-                      className="w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                      onClick={() => handleImageClick(0)}
-                    />
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2">
+                <div className="mb-4 relative">
+                  <div className="overflow-hidden rounded-lg" ref={emblaRef}>
+                    <div className="flex">
                       {imageUrls.map((url, index) => (
                         <div
                           key={index}
-                          className="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => handleImageClick(index)}
+                          className="flex-[0_0_100%] min-w-0"
                         >
                           <img
                             src={url}
                             alt={`${post.title} ${index + 1}`}
-                            className="w-full h-full object-cover"
+                            className="w-full aspect-video object-cover cursor-pointer"
+                            onClick={() => handleImageClick(index)}
                           />
                         </div>
                       ))}
                     </div>
+                  </div>
+                  
+                  {/* Navigation arrows */}
+                  {imageUrls.length > 1 && (
+                    <>
+                      <button
+                        onClick={scrollPrev}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={scrollNext}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                      
+                      {/* Dots indicator */}
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                        {imageUrls.map((_, index) => (
+                          <div
+                            key={index}
+                            className={cn(
+                              "w-2 h-2 rounded-full transition-colors",
+                              currentSlide === index ? "bg-white" : "bg-white/50"
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
+              )}
+
+              {/* Seminar CTA Button */}
+              {post.type === 'seminar' && onSeminarClick && (
+                <Button
+                  variant="default"
+                  className="w-full mb-4 gap-2"
+                  onClick={handleSeminarClick}
+                >
+                  <Calendar className="w-4 h-4" />
+                  설명회 상세 보기
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
               )}
 
               {/* Body Content */}
