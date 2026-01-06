@@ -31,6 +31,7 @@ interface FeedPost {
   target_regions: string[];
   like_count: number;
   created_at: string;
+  seminar_id?: string | null;
   academy: {
     id: string;
     name: string;
@@ -311,7 +312,7 @@ const CommunityPage = () => {
           }
         }}
         onAcademyClick={(id) => navigate(`/academy/${id}`)}
-        onSeminarClick={(academyId) => navigate(`/explore?tab=seminars&academy=${academyId}`)}
+        onSeminarClick={(seminarId) => navigate(`/seminars/${seminarId}`)}
       />
 
       <BottomNavigation />

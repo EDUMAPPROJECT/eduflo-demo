@@ -118,6 +118,7 @@ const CreatePostDialog = ({ open, onOpenChange, academyId, onSuccess }: CreatePo
           body: finalBody || null,
           image_url: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
           target_regions: targetRegions,
+          seminar_id: selectedSeminarId || null,
         });
 
       if (error) throw error;

@@ -304,6 +304,7 @@ export type Database = {
           id: string
           image_url: string | null
           like_count: number
+          seminar_id: string | null
           target_regions: string[] | null
           title: string
           type: string
@@ -316,6 +317,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           like_count?: number
+          seminar_id?: string | null
           target_regions?: string[] | null
           title: string
           type: string
@@ -328,6 +330,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           like_count?: number
+          seminar_id?: string | null
           target_regions?: string[] | null
           title?: string
           type?: string
@@ -339,6 +342,13 @@ export type Database = {
             columns: ["academy_id"]
             isOneToOne: false
             referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_posts_seminar_id_fkey"
+            columns: ["seminar_id"]
+            isOneToOne: false
+            referencedRelation: "seminars"
             referencedColumns: ["id"]
           },
         ]

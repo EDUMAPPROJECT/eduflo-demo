@@ -18,6 +18,7 @@ interface FeedPost {
   image_url: string | null;
   like_count: number;
   created_at: string;
+  seminar_id?: string | null;
   academy: {
     id: string;
     name: string;
@@ -32,7 +33,7 @@ interface FeedPostDetailSheetProps {
   onClose: () => void;
   onLikeToggle: (postId: string, isLiked: boolean) => void;
   onAcademyClick: (academyId: string) => void;
-  onSeminarClick?: (academyId: string) => void;
+  onSeminarClick?: (seminarId: string) => void;
 }
 
 const typeConfig = {
@@ -105,9 +106,9 @@ const FeedPostDetailSheet = ({
   };
 
   const handleSeminarClick = () => {
-    onClose();
-    if (onSeminarClick) {
-      onSeminarClick(post.academy.id);
+    if (post.seminar_id && onSeminarClick) {
+      onClose();
+      onSeminarClick(post.seminar_id);
     }
   };
 
@@ -219,14 +220,14 @@ const FeedPostDetailSheet = ({
               )}
 
               {/* Seminar CTA Button */}
-              {post.type === 'seminar' && onSeminarClick && (
+              {post.type === 'seminar' && post.seminar_id && onSeminarClick && (
                 <Button
                   variant="default"
                   className="w-full mb-4 gap-2"
                   onClick={handleSeminarClick}
                 >
                   <Calendar className="w-4 h-4" />
-                  설명회 상세 보기
+                  설명회 신청하기
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               )}
