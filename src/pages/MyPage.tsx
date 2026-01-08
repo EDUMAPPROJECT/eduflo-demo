@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import BottomNavigation from "@/components/BottomNavigation";
 import Logo from "@/components/Logo";
 import NicknameSettingsDialog from "@/components/NicknameSettingsDialog";
+import MyClassList from "@/components/MyClassList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +32,8 @@ import {
   Calendar,
   Pencil,
   MapPin,
-  X
+  X,
+  BookOpen
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
@@ -464,11 +466,15 @@ const MyPage = () => {
         </div>
 
         {user && (
-          <Tabs defaultValue="reservations" className="mb-6">
-            <TabsList className="w-full grid grid-cols-4">
+          <Tabs defaultValue="myclass" className="mb-6">
+            <TabsList className="w-full grid grid-cols-5">
+              <TabsTrigger value="myclass" className="gap-1 text-xs px-1">
+                <BookOpen className="w-3 h-3" />
+                MY
+              </TabsTrigger>
               <TabsTrigger value="reservations" className="gap-1 text-xs px-1">
                 <Calendar className="w-3 h-3" />
-                방문상담
+                방문
               </TabsTrigger>
               <TabsTrigger value="seminars" className="gap-1 text-xs px-1">
                 <GraduationCap className="w-3 h-3" />
@@ -483,6 +489,10 @@ const MyPage = () => {
                 찜
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="myclass" className="mt-4">
+              <MyClassList />
+            </TabsContent>
 
             <TabsContent value="reservations" className="mt-4">
               {loading ? (

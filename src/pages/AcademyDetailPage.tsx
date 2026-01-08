@@ -17,13 +17,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   ArrowLeft,
   MapPin,
@@ -36,6 +38,8 @@ import {
   Heart,
   MessageCircle,
   Newspaper,
+  Plus,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { logError } from "@/lib/errorLogger";
@@ -163,6 +167,11 @@ const AcademyDetailPage = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<ClassInfo | null>(null);
+  const [enrolledClasses, setEnrolledClasses] = useState<Set<string>>(new Set());
+  const [enrollConfirmDialog, setEnrollConfirmDialog] = useState<{
+    isOpen: boolean;
+    classInfo: ClassInfo | null;
+  }>({ isOpen: false, classInfo: null });
 
   // Removed old consultation form state - using new ConsultationReservationDialog
 
@@ -188,6 +197,7 @@ const AcademyDetailPage = () => {
       setUser(session?.user ?? null);
       if (session?.user && id) {
         checkBookmark(session.user.id, id);
+        fetchEnrolledClasses(session.user.id);
       }
     });
 
@@ -199,6 +209,53 @@ const AcademyDetailPage = () => {
       trackProfileView(id);
     }
   }, [id]);
+
+  const fetchEnrolledClasses = async (userId: string) => {
+    const { data } = await supabase
+      .from("class_enrollments")
+      .select("class_id")
+      .eq("user_id", userId);
+    
+    if (data) {
+      setEnrolledClasses(new Set(data.map(e => e.class_id)));
+    }
+  };
+
+  const handleEnrollClass = async () => {
+    if (!user) {
+      toast.error("로그인이 필요합니다");
+      navigate("/auth");
+      return;
+    }
+
+    const classInfo = enrollConfirmDialog.classInfo;
+    if (!classInfo) return;
+
+    try {
+      const { error } = await supabase
+        .from("class_enrollments")
+        .insert({
+          user_id: user.id,
+          class_id: classInfo.id,
+        });
+
+      if (error) {
+        if (error.code === "23505") {
+          toast.error("이미 등록된 강좌입니다");
+        } else {
+          throw error;
+        }
+      } else {
+        setEnrolledClasses(prev => new Set([...prev, classInfo.id]));
+        toast.success("MY CLASS에 등록되었습니다! 시간표에서 확인하세요.");
+      }
+    } catch (error) {
+      logError("enroll-class", error);
+      toast.error("등록에 실패했습니다");
+    }
+
+    setEnrollConfirmDialog({ isOpen: false, classInfo: null });
+  };
 
   const trackProfileView = async (academyId: string) => {
     try {
@@ -492,62 +549,95 @@ const AcademyDetailPage = () => {
               const displayClasses = classes.length > 0 ? classes : mockCourses;
               return (
                 <div className="space-y-3">
-                  {displayClasses.map((cls) => (
-                    <Card 
-                      key={cls.id} 
-                      className="shadow-card overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={() => setSelectedClass(cls)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-semibold text-foreground">{cls.name}</h4>
-                              {cls.is_recruiting ? (
-                                <Badge className="bg-green-500 text-white text-[10px] px-1.5 py-0">모집중</Badge>
-                              ) : (
-                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">마감</Badge>
-                              )}
-                            </div>
-                            
-                            <div className="flex flex-wrap gap-2 mb-2">
-                              {cls.target_grade && (
-                                <Badge variant="outline" className="text-xs gap-1">
-                                  <Users className="w-3 h-3" />
-                                  {cls.target_grade}
-                                </Badge>
-                              )}
-                              {cls.schedule && (
-                                <Badge variant="outline" className="text-xs gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  {cls.schedule}
-                                </Badge>
-                              )}
-                            </div>
-                            
-                            {cls.description && (
-                              <div className="flex flex-wrap gap-1 mb-2">
-                                {cls.description.split(',').map((tag, idx) => (
-                                  <span key={idx} className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                                    {tag.trim()}
-                                  </span>
-                                ))}
+                  {displayClasses.map((cls) => {
+                    const isEnrolled = enrolledClasses.has(cls.id);
+                    return (
+                      <Card 
+                        key={cls.id} 
+                        className="shadow-card overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                        onClick={() => setSelectedClass(cls)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h4 className="font-semibold text-foreground">{cls.name}</h4>
+                                {cls.is_recruiting ? (
+                                  <Badge className="bg-green-500 text-white text-[10px] px-1.5 py-0">모집중</Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">마감</Badge>
+                                )}
+                                {isEnrolled && (
+                                  <Badge className="bg-blue-500 text-white text-[10px] px-1.5 py-0">등록됨</Badge>
+                                )}
                               </div>
-                            )}
+                              
+                              <div className="flex flex-wrap gap-2 mb-2">
+                                {cls.target_grade && (
+                                  <Badge variant="outline" className="text-xs gap-1">
+                                    <Users className="w-3 h-3" />
+                                    {cls.target_grade}
+                                  </Badge>
+                                )}
+                                {cls.schedule && (
+                                  <Badge variant="outline" className="text-xs gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {cls.schedule}
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              {cls.description && (
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                  {cls.description.split(',').map((tag, idx) => (
+                                    <span key={idx} className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                      {tag.trim()}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="flex flex-col items-end gap-2 shrink-0">
+                              <div className="text-right">
+                                {cls.fee && (
+                                  <p className="font-bold text-primary text-lg">
+                                    {cls.fee.toLocaleString()}원
+                                  </p>
+                                )}
+                                <p className="text-xs text-muted-foreground">/월</p>
+                              </div>
+                              
+                              <Button
+                                size="sm"
+                                variant={isEnrolled ? "secondary" : "default"}
+                                className="gap-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!isEnrolled) {
+                                    setEnrollConfirmDialog({ isOpen: true, classInfo: cls });
+                                  }
+                                }}
+                                disabled={isEnrolled}
+                              >
+                                {isEnrolled ? (
+                                  <>
+                                    <Check className="w-3 h-3" />
+                                    등록됨
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus className="w-3 h-3" />
+                                    등록
+                                  </>
+                                )}
+                              </Button>
+                            </div>
                           </div>
-                          
-                          <div className="text-right shrink-0">
-                            {cls.fee && (
-                              <p className="font-bold text-primary text-lg">
-                                {cls.fee.toLocaleString()}원
-                              </p>
-                            )}
-                            <p className="text-xs text-muted-foreground">/월</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               );
             })()}
@@ -689,21 +779,60 @@ const AcademyDetailPage = () => {
                   </Card>
                 </div>
 
-                {/* CTA Button */}
-                <Button 
-                  className="w-full" 
-                  size="lg"
-                  onClick={() => {
-                    setSelectedClass(null);
-                    setIsDialogOpen(true);
-                  }}
-                >
-                  상담 신청하기
-                </Button>
+                {/* CTA Buttons */}
+                <div className="flex gap-2">
+                  {selectedClass && !enrolledClasses.has(selectedClass.id) && (
+                    <Button 
+                      className="flex-1 gap-1" 
+                      size="lg"
+                      variant="outline"
+                      onClick={() => {
+                        setEnrollConfirmDialog({ isOpen: true, classInfo: selectedClass });
+                        setSelectedClass(null);
+                      }}
+                    >
+                      <Plus className="w-4 h-4" />
+                      MY CLASS 등록
+                    </Button>
+                  )}
+                  <Button 
+                    className="flex-1" 
+                    size="lg"
+                    onClick={() => {
+                      setSelectedClass(null);
+                      setIsDialogOpen(true);
+                    }}
+                  >
+                    상담 신청하기
+                  </Button>
+                </div>
               </div>
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Enroll Confirmation Dialog */}
+        <AlertDialog
+          open={enrollConfirmDialog.isOpen}
+          onOpenChange={(open) => !open && setEnrollConfirmDialog({ isOpen: false, classInfo: null })}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>MY CLASS 등록</AlertDialogTitle>
+              <AlertDialogDescription>
+                "{enrollConfirmDialog.classInfo?.name}"을(를) MY CLASS에 등록하시겠습니까?
+                <br />
+                <span className="text-primary font-medium">시간표에서 수업 일정을 확인할 수 있습니다.</span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>취소</AlertDialogCancel>
+              <AlertDialogAction onClick={handleEnrollClass}>
+                등록하기
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
 
       {/* Fixed Bottom Buttons */}
