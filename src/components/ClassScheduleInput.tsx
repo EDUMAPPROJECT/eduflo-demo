@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -24,16 +23,29 @@ interface ClassScheduleInputProps {
 
 const DAYS = ["월", "화", "수", "목", "금", "토", "일"];
 
+// Generate time options in 15-minute intervals
+const generateTimeOptions = () => {
+  const options: string[] = [];
+  for (let hour = 0; hour < 24; hour++) {
+    for (let minute = 0; minute < 60; minute += 15) {
+      const h = hour.toString().padStart(2, "0");
+      const m = minute.toString().padStart(2, "0");
+      options.push(`${h}:${m}`);
+    }
+  }
+  return options;
+};
+
+const TIME_OPTIONS = generateTimeOptions();
+
 // Parse schedule string like "월 18:00~20:00, 수 19:00~21:00" or "월/수/금 18:00~20:00"
 function parseSchedule(schedule: string): ScheduleEntry[] {
   if (!schedule) return [];
   
-  // Try new format first: "월 18:00~20:00, 수 19:00~21:00"
   const entries: ScheduleEntry[] = [];
   const parts = schedule.split(",").map(p => p.trim());
   
   for (const part of parts) {
-    // Match: 요일 시간~시간
     const match = part.match(/([월화수목금토일])\s*(\d{1,2}:\d{2})\s*[~\-]\s*(\d{1,2}:\d{2})/);
     if (match) {
       entries.push({
@@ -44,7 +56,6 @@ function parseSchedule(schedule: string): ScheduleEntry[] {
     }
   }
   
-  // If new format worked, return
   if (entries.length > 0) return entries;
   
   // Try old format: "월/수/금 18:00~20:00"
@@ -64,12 +75,10 @@ function parseSchedule(schedule: string): ScheduleEntry[] {
   return [];
 }
 
-// Build schedule string from entries
 function buildSchedule(entries: ScheduleEntry[]): string {
   const validEntries = entries.filter(e => e.day && e.startTime && e.endTime);
   if (validEntries.length === 0) return "";
   
-  // Sort by day order
   const sorted = [...validEntries].sort((a, b) => 
     DAYS.indexOf(a.day) - DAYS.indexOf(b.day)
   );
@@ -83,7 +92,6 @@ export default function ClassScheduleInput({ value, onChange }: ClassScheduleInp
     return parsed.length > 0 ? parsed : [{ day: "", startTime: "", endTime: "" }];
   });
 
-  // Update parent when entries change
   useEffect(() => {
     const newSchedule = buildSchedule(entries);
     if (newSchedule !== value) {
@@ -91,7 +99,6 @@ export default function ClassScheduleInput({ value, onChange }: ClassScheduleInp
     }
   }, [entries]);
 
-  // Sync from parent value (e.g., when editing)
   useEffect(() => {
     const parsed = parseSchedule(value);
     if (parsed.length > 0) {
@@ -119,7 +126,6 @@ export default function ClassScheduleInput({ value, onChange }: ClassScheduleInp
     }
   };
 
-  // Get already selected days to prevent duplicates
   const selectedDays = entries.map(e => e.day).filter(Boolean);
 
   return (
@@ -128,56 +134,74 @@ export default function ClassScheduleInput({ value, onChange }: ClassScheduleInp
       
       <div className="space-y-2">
         {entries.map((entry, index) => (
-          <div key={index} className="flex flex-col gap-2 p-3 bg-muted/30 rounded-lg">
-            {/* Top Row: Day Selection + Remove Button */}
-            <div className="flex items-center justify-between gap-2">
-              <Select 
-                value={entry.day} 
-                onValueChange={(val) => updateEntry(index, "day", val)}
-              >
-                <SelectTrigger className="w-20 shrink-0">
-                  <SelectValue placeholder="요일" />
-                </SelectTrigger>
-                <SelectContent>
-                  {DAYS.map((day) => (
-                    <SelectItem 
-                      key={day} 
-                      value={day}
-                      disabled={selectedDays.includes(day) && entry.day !== day}
-                    >
-                      {day}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 shrink-0"
-                onClick={() => removeEntry(index)}
-              >
-                <X className="h-4 w-4 text-muted-foreground" />
-              </Button>
-            </div>
+          <div key={index} className="flex items-center gap-1 p-2 bg-muted/30 rounded-lg">
+            {/* Day Selection */}
+            <Select 
+              value={entry.day} 
+              onValueChange={(val) => updateEntry(index, "day", val)}
+            >
+              <SelectTrigger className="w-14 h-9 px-2 text-sm shrink-0">
+                <SelectValue placeholder="요일" />
+              </SelectTrigger>
+              <SelectContent>
+                {DAYS.map((day) => (
+                  <SelectItem 
+                    key={day} 
+                    value={day}
+                    disabled={selectedDays.includes(day) && entry.day !== day}
+                  >
+                    {day}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            {/* Time Selection */}
-            <div className="flex items-center gap-2">
-              <Input
-                type="time"
-                value={entry.startTime}
-                onChange={(e) => updateEntry(index, "startTime", e.target.value)}
-                className="flex-1 text-sm"
-              />
-              <span className="text-muted-foreground text-sm">~</span>
-              <Input
-                type="time"
-                value={entry.endTime}
-                onChange={(e) => updateEntry(index, "endTime", e.target.value)}
-                className="flex-1 text-sm"
-              />
-            </div>
+            {/* Start Time */}
+            <Select 
+              value={entry.startTime} 
+              onValueChange={(val) => updateEntry(index, "startTime", val)}
+            >
+              <SelectTrigger className="w-[72px] h-9 px-2 text-xs shrink-0">
+                <SelectValue placeholder="시작" />
+              </SelectTrigger>
+              <SelectContent className="max-h-48">
+                {TIME_OPTIONS.map((time) => (
+                  <SelectItem key={time} value={time} className="text-xs">
+                    {time}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <span className="text-muted-foreground text-xs">~</span>
+
+            {/* End Time */}
+            <Select 
+              value={entry.endTime} 
+              onValueChange={(val) => updateEntry(index, "endTime", val)}
+            >
+              <SelectTrigger className="w-[72px] h-9 px-2 text-xs shrink-0">
+                <SelectValue placeholder="종료" />
+              </SelectTrigger>
+              <SelectContent className="max-h-48">
+                {TIME_OPTIONS.map((time) => (
+                  <SelectItem key={time} value={time} className="text-xs">
+                    {time}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Remove Button */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => removeEntry(index)}
+            >
+              <X className="h-4 w-4 text-muted-foreground" />
+            </Button>
           </div>
         ))}
       </div>
