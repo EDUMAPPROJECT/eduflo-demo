@@ -128,30 +128,42 @@ export default function ClassScheduleInput({ value, onChange }: ClassScheduleInp
       
       <div className="space-y-2">
         {entries.map((entry, index) => (
-          <div key={index} className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
-            {/* Day Selection */}
-            <Select 
-              value={entry.day} 
-              onValueChange={(val) => updateEntry(index, "day", val)}
-            >
-              <SelectTrigger className="w-[70px]">
-                <SelectValue placeholder="요일" />
-              </SelectTrigger>
-              <SelectContent>
-                {DAYS.map((day) => (
-                  <SelectItem 
-                    key={day} 
-                    value={day}
-                    disabled={selectedDays.includes(day) && entry.day !== day}
-                  >
-                    {day}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div key={index} className="flex flex-col gap-2 p-3 bg-muted/30 rounded-lg">
+            {/* Top Row: Day Selection + Remove Button */}
+            <div className="flex items-center justify-between gap-2">
+              <Select 
+                value={entry.day} 
+                onValueChange={(val) => updateEntry(index, "day", val)}
+              >
+                <SelectTrigger className="w-20 shrink-0">
+                  <SelectValue placeholder="요일" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DAYS.map((day) => (
+                    <SelectItem 
+                      key={day} 
+                      value={day}
+                      disabled={selectedDays.includes(day) && entry.day !== day}
+                    >
+                      {day}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => removeEntry(index)}
+              >
+                <X className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </div>
 
             {/* Time Selection */}
-            <div className="flex items-center gap-1 flex-1">
+            <div className="flex items-center gap-2">
               <Input
                 type="time"
                 value={entry.startTime}
@@ -166,17 +178,6 @@ export default function ClassScheduleInput({ value, onChange }: ClassScheduleInp
                 className="flex-1 text-sm"
               />
             </div>
-
-            {/* Remove Button */}
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              onClick={() => removeEntry(index)}
-            >
-              <X className="h-4 w-4 text-muted-foreground" />
-            </Button>
           </div>
         ))}
       </div>

@@ -817,7 +817,7 @@ const ProfileManagementPage = () => {
                   강좌 추가
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
+              <DialogContent className="w-[calc(100vw-2rem)] max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden">
                 <DialogHeader>
                   <DialogTitle>{editingClass ? "강좌 수정" : "강좌 추가"}</DialogTitle>
                 </DialogHeader>
