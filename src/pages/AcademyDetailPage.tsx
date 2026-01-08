@@ -547,10 +547,17 @@ const AcademyDetailPage = () => {
           <TabsContent value="classes" className="space-y-4">
             {(() => {
               const displayClasses = classes.length > 0 ? classes : mockCourses;
+              const isMockData = classes.length === 0;
               return (
                 <div className="space-y-3">
+                  {isMockData && (
+                    <div className="text-center py-3 px-4 bg-amber-50 text-amber-700 rounded-lg text-sm mb-4">
+                      아래는 예시 강좌입니다. 실제 강좌는 학원에서 등록 후 확인하실 수 있습니다.
+                    </div>
+                  )}
                   {displayClasses.map((cls) => {
                     const isEnrolled = enrolledClasses.has(cls.id);
+                    const isMockClass = cls.id.startsWith('mock-');
                     return (
                       <Card 
                         key={cls.id} 
@@ -608,30 +615,32 @@ const AcademyDetailPage = () => {
                                 <p className="text-xs text-muted-foreground">/월</p>
                               </div>
                               
-                              <Button
-                                size="sm"
-                                variant={isEnrolled ? "secondary" : "default"}
-                                className="gap-1"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (!isEnrolled) {
-                                    setEnrollConfirmDialog({ isOpen: true, classInfo: cls });
-                                  }
-                                }}
-                                disabled={isEnrolled}
-                              >
-                                {isEnrolled ? (
-                                  <>
-                                    <Check className="w-3 h-3" />
-                                    등록됨
-                                  </>
-                                ) : (
-                                  <>
-                                    <Plus className="w-3 h-3" />
-                                    등록
-                                  </>
-                                )}
-                              </Button>
+                              {!isMockClass && (
+                                <Button
+                                  size="sm"
+                                  variant={isEnrolled ? "secondary" : "default"}
+                                  className="gap-1"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!isEnrolled) {
+                                      setEnrollConfirmDialog({ isOpen: true, classInfo: cls });
+                                    }
+                                  }}
+                                  disabled={isEnrolled}
+                                >
+                                  {isEnrolled ? (
+                                    <>
+                                      <Check className="w-3 h-3" />
+                                      등록됨
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Plus className="w-3 h-3" />
+                                      등록
+                                    </>
+                                  )}
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </CardContent>
