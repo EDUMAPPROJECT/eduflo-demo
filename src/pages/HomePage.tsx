@@ -5,6 +5,7 @@ import { useRegion } from "@/contexts/RegionContext";
 import BottomNavigation from "@/components/BottomNavigation";
 import Logo from "@/components/Logo";
 import QuickCategoryMenu from "@/components/QuickCategoryMenu";
+import QuickActionMenu from "@/components/QuickActionMenu";
 import LearningStyleBanner from "@/components/LearningStyleBanner";
 import GlobalRegionSelector from "@/components/GlobalRegionSelector";
 import SeminarCarousel from "@/components/SeminarCarousel";
@@ -259,6 +260,11 @@ const HomePage = () => {
             <LearningStyleBanner />
           </section>
         )}
+
+        {/* Quick Action Menu */}
+        <section className="mb-6 px-4">
+          <QuickActionMenu />
+        </section>
 
         {/* Quick Category Menu */}
         <section className="mb-6 px-4">
