@@ -258,8 +258,8 @@ const TimetablePage = () => {
                   return (
                     <div key={hour} className="relative">
                       {/* Time Label */}
-                      <div className="absolute left-0 top-0 w-10 -translate-y-1/2 text-right pr-2 z-10">
-                        <span className="text-xs text-gray-400">{displayHour}</span>
+                      <div className="absolute left-0 top-1 w-10 text-right pr-2 z-10">
+                        <span className="text-xs text-muted-foreground">{displayHour}</span>
                       </div>
                       
                       {/* Grid Row */}
