@@ -98,6 +98,7 @@ const ProfileManagementPage = () => {
 
   // Profile state
   const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
   const [description, setDescription] = useState("");
   const [profileImage, setProfileImage] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -174,6 +175,7 @@ const ProfileManagementPage = () => {
       if (data) {
         setAcademy(data);
         setName(data.name);
+        setAddress(data.address || "");
         setDescription(data.description || "");
         setProfileImage(data.profile_image || "");
         setTags(data.tags || []);
@@ -249,6 +251,7 @@ const ProfileManagementPage = () => {
         .from("academies")
         .update({
           name: validatedData.name,
+          address: address || null,
           description: validatedData.description,
           profile_image: validatedData.profile_image,
           tags: validatedData.tags,
@@ -618,6 +621,22 @@ const ProfileManagementPage = () => {
               </CardHeader>
               <CardContent>
                 <Input value={name} onChange={(e) => setName(e.target.value)} />
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary" />
+                  학원 주소
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Input 
+                  value={address} 
+                  onChange={(e) => setAddress(e.target.value)} 
+                  placeholder="예: 경기도 화성시 동탄대로 123"
+                />
               </CardContent>
             </Card>
 
