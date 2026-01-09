@@ -38,7 +38,6 @@ const MyPage = () => {
   const [bookmarks, setBookmarks] = useState<BookmarkWithAcademy[]>([]);
   const [reservationCount, setReservationCount] = useState(0);
   const [seminarCount, setSeminarCount] = useState(0);
-  const [consultationCount, setConsultationCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isNicknameDialogOpen, setIsNicknameDialogOpen] = useState(false);
 
@@ -106,13 +105,6 @@ const MyPage = () => {
         .select("*", { count: "exact", head: true })
         .eq("user_id", userId);
       setSeminarCount(semCount || 0);
-
-      // Fetch consultation count
-      const { count: conCount } = await supabase
-        .from("consultations")
-        .select("*", { count: "exact", head: true })
-        .eq("parent_id", userId);
-      setConsultationCount(conCount || 0);
     } catch (error) {
       console.error("Error fetching counts:", error);
     }
@@ -236,7 +228,7 @@ const MyPage = () => {
             <span className="text-sm font-medium text-foreground">내 예약</span>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </div>
-          <div className="grid grid-cols-3 divide-x divide-border">
+          <div className="grid grid-cols-2 divide-x divide-border">
             <div className="text-center py-2">
               <p className="text-2xl font-bold text-primary">{reservationCount}</p>
               <p className="text-xs text-muted-foreground">방문 상담</p>
@@ -244,10 +236,6 @@ const MyPage = () => {
             <div className="text-center py-2">
               <p className="text-2xl font-bold text-accent">{seminarCount}</p>
               <p className="text-xs text-muted-foreground">설명회</p>
-            </div>
-            <div className="text-center py-2">
-              <p className="text-2xl font-bold text-amber-600">{consultationCount}</p>
-              <p className="text-xs text-muted-foreground">상담</p>
             </div>
           </div>
         </div>
