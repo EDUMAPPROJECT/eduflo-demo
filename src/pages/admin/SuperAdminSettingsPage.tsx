@@ -39,6 +39,10 @@ interface Announcement {
   created_at: string;
 }
 
+interface PlatformSettings {
+  email_verification_enabled: boolean;
+}
+
 const SuperAdminSettingsPage = () => {
   const navigate = useNavigate();
   const { isSuperAdmin, loading: authLoading } = useSuperAdmin();
@@ -52,12 +56,81 @@ const SuperAdminSettingsPage = () => {
     is_active: true,
     priority: 0
   });
+  const [platformSettings, setPlatformSettings] = useState<PlatformSettings>({
+    email_verification_enabled: true
+  });
+  const [settingsLoading, setSettingsLoading] = useState(false);
 
   useEffect(() => {
     if (!authLoading && isSuperAdmin) {
       fetchAnnouncements();
+      fetchPlatformSettings();
     }
   }, [authLoading, isSuperAdmin]);
+
+  const fetchPlatformSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('platform_settings')
+        .select('key, value')
+        .eq('key', 'email_verification_enabled')
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (data) {
+        setPlatformSettings({
+          email_verification_enabled: data.value === true || data.value === 'true'
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching platform settings:', error);
+    }
+  };
+
+  const handleEmailVerificationToggle = async (enabled: boolean) => {
+    setSettingsLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const { data: existingData } = await supabase
+        .from('platform_settings')
+        .select('id')
+        .eq('key', 'email_verification_enabled')
+        .maybeSingle();
+
+      if (existingData) {
+        const { error } = await supabase
+          .from('platform_settings')
+          .update({ 
+            value: enabled,
+            updated_by: session?.user?.id 
+          })
+          .eq('key', 'email_verification_enabled');
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('platform_settings')
+          .insert({
+            key: 'email_verification_enabled',
+            value: enabled,
+            description: '회원가입 시 이메일 인증 필수 여부',
+            updated_by: session?.user?.id
+          });
+
+        if (error) throw error;
+      }
+
+      setPlatformSettings({ email_verification_enabled: enabled });
+      toast.success(enabled ? "이메일 인증이 활성화되었습니다" : "이메일 인증이 비활성화되었습니다");
+    } catch (error) {
+      console.error('Error updating email verification setting:', error);
+      toast.error("설정 변경에 실패했습니다");
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
 
   const fetchAnnouncements = async () => {
     try {
@@ -345,9 +418,24 @@ const SuperAdminSettingsPage = () => {
               기본 설정
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-center text-muted-foreground py-8">
-              추가 설정 기능이 곧 제공될 예정입니다
+          <CardContent className="space-y-4">
+            {/* Email Verification Toggle */}
+            <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+              <div className="flex-1">
+                <h4 className="font-medium text-foreground">이메일 인증</h4>
+                <p className="text-sm text-muted-foreground">
+                  회원가입 시 이메일 인증을 필수로 요구합니다
+                </p>
+              </div>
+              <Switch
+                checked={platformSettings.email_verification_enabled}
+                onCheckedChange={handleEmailVerificationToggle}
+                disabled={settingsLoading}
+              />
+            </div>
+            
+            <p className="text-xs text-muted-foreground">
+              ※ 이메일 인증을 비활성화하면 가입 즉시 계정이 활성화됩니다
             </p>
           </CardContent>
         </Card>

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Logo from "@/components/Logo";
-import { Mail, Lock, ArrowRight, CheckCircle, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Mail, Lock, ArrowRight, CheckCircle, Eye, EyeOff, RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { logError, getUserFriendlyMessage } from "@/lib/errorLogger";
 
@@ -25,6 +25,8 @@ const AuthPage = () => {
     (searchParams.get("role") as "parent" | "admin") || "parent"
   );
   const [showPassword, setShowPassword] = useState(false);
+  const [emailVerificationEnabled, setEmailVerificationEnabled] = useState(true);
+  const [settingsLoading, setSettingsLoading] = useState(true);
 
   // Navigate based on server-side role from database
   const navigateByDatabaseRole = async (userId: string) => {
@@ -58,6 +60,33 @@ const AuthPage = () => {
       navigate("/home");
     }
   };
+
+  // Fetch platform settings for email verification
+  useEffect(() => {
+    const fetchEmailVerificationSetting = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'email_verification_enabled')
+          .maybeSingle();
+
+        if (error) throw error;
+        
+        if (data) {
+          setEmailVerificationEnabled(data.value === true || data.value === 'true');
+        }
+      } catch (error) {
+        console.error('Error fetching email verification setting:', error);
+        // Default to enabled if fetch fails
+        setEmailVerificationEnabled(true);
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+
+    fetchEmailVerificationSetting();
+  }, []);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -164,11 +193,11 @@ const AuthPage = () => {
 
       // Check if email confirmation is required
       if (data.user && !data.session) {
-        // Email confirmation is required
+        // Email confirmation is required (server-side setting)
         setStep("verify-email");
         toast.success("인증 이메일이 발송되었습니다");
       } else if (data.session) {
-        // Auto-confirmed, go to welcome
+        // Auto-confirmed (either email verification disabled or already confirmed)
         setIsNewUser(true);
         setStep("welcome");
         toast.success("회원가입이 완료되었습니다");
@@ -217,6 +246,14 @@ const AuthPage = () => {
       navigate("/home");
     }
   };
+
+  if (settingsLoading) {
+    return (
+      <div className="min-h-screen gradient-hero flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen gradient-hero flex flex-col">
