@@ -458,7 +458,7 @@ const AcademyDetailPage = () => {
               강사진
             </TabsTrigger>
             <TabsTrigger value="classes" className="gap-1 text-xs">
-              <BookOpen className="w-3 h-3" />
+              <BookOpen className="w-4 h-4" />
               개설 강좌
             </TabsTrigger>
           </TabsList>
