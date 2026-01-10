@@ -565,54 +565,60 @@ const AcademyDetailPage = () => {
                         onClick={() => setSelectedClass(cls)}
                       >
                         <CardContent className="p-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-1.5 mb-2 flex-wrap">
-                                <h4 className="font-semibold text-foreground text-sm">{cls.name}</h4>
-                                {cls.is_recruiting ? (
-                                  <Badge className="bg-green-500 text-white text-[10px] px-1.5 py-0 shrink-0">모집중</Badge>
-                                ) : (
-                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">마감</Badge>
-                                )}
-                                {isEnrolled && (
-                                  <Badge className="bg-blue-500 text-white text-[10px] px-1.5 py-0 shrink-0">등록됨</Badge>
-                                )}
-                              </div>
-                              
-                              <div className="flex items-center gap-1.5 mb-2">
-                                {cls.target_grade && (
-                                  <Badge variant="outline" className="text-[10px] gap-0.5 px-1.5 py-0 shrink-0">
-                                    <Users className="w-2.5 h-2.5" />
-                                    {cls.target_grade}
-                                  </Badge>
-                                )}
-                                {cls.schedule && (
-                                  <Badge variant="outline" className="text-[10px] gap-0.5 px-1.5 py-0 whitespace-nowrap">
-                                    <Clock className="w-2.5 h-2.5" />
-                                    {cls.schedule}
-                                  </Badge>
-                                )}
-                              </div>
-                              
-                              {cls.description && (
-                                <div className="flex flex-wrap gap-1 mb-2">
-                                  {cls.description.split(',').map((tag, idx) => (
-                                    <span key={idx} className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                                      {tag.trim()}
-                                    </span>
-                                  ))}
-                                </div>
+                          <div className="space-y-3">
+                            {/* Title and badges */}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h4 className="font-semibold text-foreground text-sm">{cls.name}</h4>
+                              {cls.is_recruiting ? (
+                                <Badge className="bg-green-500 text-white text-[10px] px-1.5 py-0 shrink-0">모집중</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">마감</Badge>
+                              )}
+                              {isEnrolled && (
+                                <Badge className="bg-blue-500 text-white text-[10px] px-1.5 py-0 shrink-0">등록됨</Badge>
                               )}
                             </div>
                             
-                            <div className="flex flex-col items-end gap-2 shrink-0">
-                              <div className="text-right">
-                                {cls.fee && (
-                                  <p className="font-bold text-primary text-lg">
-                                    {cls.fee.toLocaleString()}원
-                                  </p>
+                            {/* Target grade and schedule */}
+                            <div className="flex items-center gap-1.5">
+                              {cls.target_grade && (
+                                <Badge variant="outline" className="text-[10px] gap-0.5 px-1.5 py-0 shrink-0">
+                                  <Users className="w-2.5 h-2.5" />
+                                  {cls.target_grade}
+                                </Badge>
+                              )}
+                              {cls.schedule && (
+                                <Badge variant="outline" className="text-[10px] gap-0.5 px-1.5 py-0 whitespace-nowrap">
+                                  <Clock className="w-2.5 h-2.5" />
+                                  {cls.schedule}
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            {/* Description tags */}
+                            {cls.description && (
+                              <div className="flex flex-wrap gap-1">
+                                {cls.description.split(',').map((tag, idx) => (
+                                  <span key={idx} className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                    {tag.trim()}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* Price and enrollment button - bottom */}
+                            <div className="flex items-center justify-between pt-2 border-t border-border">
+                              <div className="flex items-baseline gap-1">
+                                {cls.fee ? (
+                                  <>
+                                    <span className="font-bold text-primary text-base">
+                                      {cls.fee.toLocaleString()}원
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">/월</span>
+                                  </>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">가격 문의</span>
                                 )}
-                                <p className="text-xs text-muted-foreground">/월</p>
                               </div>
                               
                               {!isMockClass && (
