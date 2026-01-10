@@ -291,7 +291,7 @@ const SuperAdminAcademiesPage = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <Logo size="sm" showText={false} />
-          <span className="font-semibold text-foreground">학원 타겟 관리</span>
+          <span className="font-semibold text-foreground">등록 학원 관리</span>
         </div>
       </header>
 
@@ -300,12 +300,12 @@ const SuperAdminAcademiesPage = () => {
         <Card className="shadow-card bg-primary/5 border-primary/20">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <Lock className="w-5 h-5 text-primary mt-0.5" />
+              <Building2 className="w-5 h-5 text-primary mt-0.5" />
               <div>
-                <h3 className="font-medium text-foreground text-sm mb-1">프로필 잠금 및 수정 기능</h3>
+                <h3 className="font-medium text-foreground text-sm mb-1">학원 프로필 관리</h3>
                 <p className="text-xs text-muted-foreground">
-                  잠금을 활성화하면 학원이 타겟 지역과 태그를 임의로 변경할 수 없습니다.
-                  슈퍼관리자는 학원의 타겟 지역과 태그를 직접 수정할 수 있습니다.
+                  슈퍼관리자는 학원을 추가/수정/삭제하고 강사, 강좌 정보를 직접 관리할 수 있습니다.
+                  잠금을 활성화하면 학원이 타겟 설정을 변경할 수 없습니다.
                 </p>
               </div>
             </div>
@@ -416,7 +416,7 @@ const SuperAdminAcademiesPage = () => {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => handleStartEdit(academy)}
+                        onClick={() => navigate(`/admin/super/academies/${academy.id}/edit`)}
                       >
                         <Pencil className="w-4 h-4" />
                       </Button>

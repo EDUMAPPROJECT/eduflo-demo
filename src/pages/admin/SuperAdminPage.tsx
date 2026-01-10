@@ -131,8 +131,8 @@ const SuperAdminPage = () => {
       color: "text-chart-4"
     },
     {
-      title: "학원 타겟 관리",
-      description: "학원 프로필 잠금 및 타겟 설정 관리",
+      title: "등록 학원 관리",
+      description: "학원 프로필, 강사, 강좌 정보 관리",
       icon: Building2,
       path: "/admin/super/academies",
       color: "text-chart-5"
