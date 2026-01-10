@@ -80,51 +80,45 @@ const AnnouncementBanner = () => {
         className="bg-primary/10 border border-primary/20 rounded-xl p-3 relative cursor-pointer hover:bg-primary/15 transition-colors"
         onClick={() => setSelectedAnnouncement(currentAnnouncement)}
       >
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-            <Megaphone className="w-4 h-4 text-primary" />
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+            <Megaphone className="w-3.5 h-3.5 text-primary" />
           </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-foreground text-sm mb-0.5">
-              {currentAnnouncement.title}
-            </h4>
-            <p className="text-xs text-muted-foreground line-clamp-2">
-              {currentAnnouncement.content}
-            </p>
-          </div>
+          <h4 className="font-medium text-foreground text-sm flex-1 truncate">
+            {currentAnnouncement.title}
+          </h4>
+          {visibleAnnouncements.length > 1 && (
+            <div className="flex items-center gap-0.5 flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-5 h-5"
+                onClick={handlePrev}
+              >
+                <ChevronLeft className="w-3 h-3" />
+              </Button>
+              <span className="text-[10px] text-muted-foreground min-w-[24px] text-center">
+                {(currentIndex % visibleAnnouncements.length) + 1}/{visibleAnnouncements.length}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-5 h-5"
+                onClick={handleNext}
+              >
+                <ChevronRight className="w-3 h-3" />
+              </Button>
+            </div>
+          )}
           <Button
             variant="ghost"
             size="icon"
-            className="w-6 h-6 flex-shrink-0"
+            className="w-5 h-5 flex-shrink-0"
             onClick={(e) => handleDismiss(e, currentAnnouncement.id)}
           >
-            <X className="w-4 h-4" />
+            <X className="w-3 h-3" />
           </Button>
         </div>
-        
-        {visibleAnnouncements.length > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="w-6 h-6"
-              onClick={handlePrev}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <span className="text-xs text-muted-foreground">
-              {(currentIndex % visibleAnnouncements.length) + 1} / {visibleAnnouncements.length}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="w-6 h-6"
-              onClick={handleNext}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
       </div>
 
       <Dialog open={!!selectedAnnouncement} onOpenChange={() => setSelectedAnnouncement(null)}>

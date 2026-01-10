@@ -80,7 +80,7 @@ const RecommendedAcademies = ({ profileTags, childName, maxCount = 3 }: Props) =
           const matchResult = calculateMatchScore(userTags!, academyTags);
           return { ...academy, matchResult };
         })
-        .filter(a => a.matchResult.score > 0)
+        .filter(a => a.matchResult.score >= 60) // Only show 60% or higher matches
         .sort((a, b) => b.matchResult.score - a.matchResult.score)
         .slice(0, maxCount);
 
@@ -213,21 +213,11 @@ const RecommendedAcademies = ({ profileTags, childName, maxCount = 3 }: Props) =
                 className={`absolute top-2 left-2 text-xs ${
                   academy.matchResult.score >= 80 
                     ? "bg-primary text-primary-foreground" 
-                    : academy.matchResult.score >= 60
-                    ? "bg-accent text-accent-foreground"
-                    : "bg-muted text-muted-foreground"
+                    : "bg-accent text-accent-foreground"
                 }`}
               >
                 {academy.matchResult.score}% 일치
               </Badge>
-              {academy.matchResult.score < 60 && (
-                <Badge 
-                  variant="outline" 
-                  className="absolute top-2 right-2 text-[10px] bg-background/80"
-                >
-                  정확도 낮음
-                </Badge>
-              )}
             </div>
             
             {/* Academy info */}
