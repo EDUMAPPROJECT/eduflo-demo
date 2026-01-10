@@ -445,20 +445,20 @@ const AcademyDetailPage = () => {
       <main className="max-w-lg mx-auto px-4 py-6">
         <Tabs defaultValue="home" className="w-full">
           <TabsList className="w-full grid grid-cols-4 mb-6">
-            <TabsTrigger value="home" className="gap-1.5 text-xs">
-              <Home className="w-4 h-4" />
+            <TabsTrigger value="home" className="gap-1 text-xs">
+              <Home className="w-3 h-3" />
               홈
             </TabsTrigger>
-            <TabsTrigger value="news" className="gap-1.5 text-xs">
-              <Newspaper className="w-4 h-4" />
+            <TabsTrigger value="news" className="gap-1 text-xs">
+              <Newspaper className="w-3 h-3" />
               소식
             </TabsTrigger>
-            <TabsTrigger value="teachers" className="gap-1.5 text-xs">
-              <Users className="w-4 h-4" />
+            <TabsTrigger value="teachers" className="gap-1 text-xs">
+              <Users className="w-3 h-3" />
               강사진
             </TabsTrigger>
-            <TabsTrigger value="classes" className="gap-1.5 text-xs">
-              <BookOpen className="w-4 h-4" />
+            <TabsTrigger value="classes" className="gap-1 text-xs">
+              <BookOpen className="w-3 h-3" />
               개설 강좌
             </TabsTrigger>
           </TabsList>
