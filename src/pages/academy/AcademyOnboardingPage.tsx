@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import Logo from "@/components/Logo";
-import { ArrowLeft, Building2, Users, ShieldAlert, FileCheck, Loader2 } from "lucide-react";
+import { ArrowLeft, Building2, Users, Loader2, Lock } from "lucide-react";
 
 const AcademyOnboardingPage = () => {
   const navigate = useNavigate();
@@ -55,48 +55,19 @@ const AcademyOnboardingPage = () => {
     }
   };
 
-  if (checkingAuth || verificationLoading || membershipLoading) {
+  const handleRegisterNewAcademy = () => {
+    if (!isVerified) {
+      toast.error("새 학원을 등록하려면 사업자 인증이 필요합니다");
+      navigate('/admin/verification');
+      return;
+    }
+    navigate('/academy/setup');
+  };
+
+  if (checkingAuth || membershipLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  // Show verification required message if not verified
-  if (!isVerified) {
-    return (
-      <div className="min-h-screen bg-background">
-        <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
-          <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-muted rounded-lg transition-colors">
-              <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
-            <h1 className="font-semibold text-foreground">학원 계정 설정</h1>
-          </div>
-        </header>
-
-        <main className="max-w-lg mx-auto px-4 py-6">
-          <Card className="shadow-card border-border">
-            <CardContent className="p-8 text-center">
-              <div className="w-16 h-16 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-4">
-                <ShieldAlert className="w-8 h-8 text-warning" />
-              </div>
-              <h2 className="text-xl font-bold text-foreground mb-2">사업자 인증이 필요합니다</h2>
-              <p className="text-muted-foreground mb-6">
-                학원 프로필을 등록하거나 기존 학원에 참여하려면 먼저 사업자등록증 인증을 완료해야 합니다.
-              </p>
-              <Button 
-                onClick={() => navigate('/admin/verification')}
-                className="w-full"
-                size="lg"
-              >
-                <FileCheck className="w-5 h-5 mr-2" />
-                사업자 인증하러 가기
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
       </div>
     );
   }
@@ -126,8 +97,10 @@ const AcademyOnboardingPage = () => {
         <div className="space-y-4">
           {/* Option 1: Register New Academy */}
           <Card 
-            className="shadow-card border-border cursor-pointer hover:border-primary/50 transition-colors"
-            onClick={() => navigate('/academy/setup')}
+            className={`shadow-card border-border cursor-pointer transition-colors ${
+              isVerified ? 'hover:border-primary/50' : 'opacity-80'
+            }`}
+            onClick={handleRegisterNewAcademy}
           >
             <CardHeader className="pb-3">
               <div className="flex items-center gap-4">
@@ -135,7 +108,12 @@ const AcademyOnboardingPage = () => {
                   <Building2 className="w-6 h-6 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <CardTitle className="text-base">새 학원 등록하기</CardTitle>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    새 학원 등록하기
+                    {!isVerified && !verificationLoading && (
+                      <Lock className="w-4 h-4 text-muted-foreground" />
+                    )}
+                  </CardTitle>
                   <CardDescription className="text-xs">
                     원장으로서 새 학원을 등록합니다
                   </CardDescription>
@@ -144,7 +122,10 @@ const AcademyOnboardingPage = () => {
             </CardHeader>
             <CardContent className="pt-0">
               <p className="text-sm text-muted-foreground">
-                학원 정보를 입력하고 프로필을 생성합니다. 등록 후 다른 관리자를 초대할 수 있습니다.
+                {isVerified 
+                  ? "학원 정보를 입력하고 프로필을 생성합니다. 등록 후 다른 관리자를 초대할 수 있습니다."
+                  : "사업자 인증을 완료하면 학원을 등록할 수 있습니다."
+                }
               </p>
             </CardContent>
           </Card>
