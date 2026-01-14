@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusinessVerification } from "@/hooks/useBusinessVerification";
+import { useAcademyMembership } from "@/hooks/useAcademyMembership";
 import AdminBottomNavigation from "@/components/AdminBottomNavigation";
 import Logo from "@/components/Logo";
 import ImageUpload from "@/components/ImageUpload";
@@ -13,7 +14,7 @@ import CurriculumEditor from "@/components/CurriculumEditor";
 import ConsultationSettingsSection from "@/components/ConsultationSettingsSection";
 import ClassScheduleInput from "@/components/ClassScheduleInput";
 import AddressSearch from "@/components/AddressSearch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,6 +37,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 import {
   Building2,
   Image,
@@ -57,6 +59,7 @@ import {
   MapPin,
   Target,
   Lock,
+  Loader2,
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { logError } from "@/lib/errorLogger";
@@ -92,11 +95,16 @@ interface Class {
 const ProfileManagementPage = () => {
   const navigate = useNavigate();
   const { isVerified, isPending, isRejected, loading: verificationLoading } = useBusinessVerification();
+  const { memberships, loading: membershipLoading, joinByCode, refetch: refetchMemberships } = useAcademyMembership();
   const [academy, setAcademy] = useState<Academy | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isProfileLocked, setIsProfileLocked] = useState(false);
+
+  // Join code state for new users
+  const [joinCode, setJoinCode] = useState("");
+  const [joining, setJoining] = useState(false);
 
   // Profile state
   const [name, setName] = useState("");
@@ -137,6 +145,38 @@ const ProfileManagementPage = () => {
 
   const { toast } = useToast();
 
+  // Handle join by code
+  const handleJoinByCode = async () => {
+    if (!joinCode.trim()) {
+      sonnerToast.error("참여 코드를 입력해주세요");
+      return;
+    }
+
+    setJoining(true);
+    const result = await joinByCode(joinCode.trim());
+    setJoining(false);
+
+    if (result.success) {
+      sonnerToast.success(`${result.academyName}에 참여했습니다!`);
+      refetchMemberships();
+      // Refetch academy data
+      if (user) {
+        fetchAcademy();
+      }
+    } else {
+      sonnerToast.error(result.error || "참여에 실패했습니다");
+    }
+  };
+
+  const handleRegisterNewAcademy = () => {
+    if (!isVerified) {
+      sonnerToast.error("새 학원을 등록하려면 사업자 인증이 필요합니다");
+      navigate('/admin/verification');
+      return;
+    }
+    navigate('/academy/setup');
+  };
+
   useEffect(() => {
     const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -166,26 +206,61 @@ const ProfileManagementPage = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from("academies")
-        .select("*")
-        .eq("owner_id", user.id)
+      // First check academy_members for user's membership
+      const { data: memberData, error: memberError } = await supabase
+        .from("academy_members")
+        .select("academy_id, role")
+        .eq("user_id", user.id)
         .maybeSingle();
 
-      if (error) throw error;
+      if (memberError) throw memberError;
 
-      if (data) {
-        setAcademy(data);
-        setName(data.name);
-        setAddress(data.address || "");
-        setDescription(data.description || "");
-        setProfileImage(data.profile_image || "");
-        setTags(data.tags || []);
-        setTargetRegions((data as any).target_regions || []);
-        setTargetTags((data as any).target_tags || []);
-        setIsProfileLocked((data as any).is_profile_locked || false);
-        fetchTeachers(data.id);
-        fetchClasses(data.id);
+      if (memberData) {
+        // User is a member of an academy, fetch the academy data
+        const { data: academyData, error: academyError } = await supabase
+          .from("academies")
+          .select("*")
+          .eq("id", memberData.academy_id)
+          .single();
+
+        if (academyError) throw academyError;
+
+        if (academyData) {
+          setAcademy(academyData);
+          setName(academyData.name);
+          setAddress(academyData.address || "");
+          setDescription(academyData.description || "");
+          setProfileImage(academyData.profile_image || "");
+          setTags(academyData.tags || []);
+          setTargetRegions((academyData as any).target_regions || []);
+          setTargetTags((academyData as any).target_tags || []);
+          setIsProfileLocked((academyData as any).is_profile_locked || false);
+          fetchTeachers(academyData.id);
+          fetchClasses(academyData.id);
+        }
+      } else {
+        // Fallback: check if user is owner (for backwards compatibility)
+        const { data: ownerData, error: ownerError } = await supabase
+          .from("academies")
+          .select("*")
+          .eq("owner_id", user.id)
+          .maybeSingle();
+
+        if (ownerError) throw ownerError;
+
+        if (ownerData) {
+          setAcademy(ownerData);
+          setName(ownerData.name);
+          setAddress(ownerData.address || "");
+          setDescription(ownerData.description || "");
+          setProfileImage(ownerData.profile_image || "");
+          setTags(ownerData.tags || []);
+          setTargetRegions((ownerData as any).target_regions || []);
+          setTargetTags((ownerData as any).target_tags || []);
+          setIsProfileLocked((ownerData as any).is_profile_locked || false);
+          fetchTeachers(ownerData.id);
+          fetchClasses(ownerData.id);
+        }
       }
     } catch (error) {
       logError("fetch-academy", error);
@@ -440,7 +515,7 @@ const ProfileManagementPage = () => {
     }
   };
 
-  if (loading || verificationLoading) {
+  if (loading || verificationLoading || membershipLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -509,35 +584,136 @@ const ProfileManagementPage = () => {
     return (
       <div className="min-h-screen bg-background pb-20">
         <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
-          <div className="max-w-lg mx-auto px-4 h-14 flex items-center">
+          <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
             <Logo size="sm" showText={false} />
+            <span className="text-xs font-medium text-primary bg-secondary px-2 py-1 rounded-full">
+              학원 계정 설정
+            </span>
           </div>
         </header>
-        <main className="max-w-lg mx-auto px-4 py-6">
-          <VerificationStatusCard />
-          
-          <Card className="shadow-card">
-            <CardContent className="p-8 text-center">
-              <Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-              <h3 className="font-semibold text-foreground mb-2">등록된 학원이 없습니다</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                {isVerified 
-                  ? "학원을 등록하고 에듀맵에서 홍보해보세요"
-                  : "사업자 인증 완료 후 학원을 등록할 수 있습니다"}
-              </p>
-              {isVerified ? (
-                <Button onClick={() => navigate("/academy/setup")} className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  학원 등록하기
-                </Button>
-              ) : (
-                <Button onClick={() => navigate("/admin/verification")} variant="outline" className="gap-2">
-                  <ShieldCheck className="w-4 h-4" />
-                  사업자 인증하기
-                </Button>
-              )}
+        <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
+          <div className="text-center mb-6">
+            <Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+            <h2 className="text-lg font-bold text-foreground mb-1">학원 계정을 설정해주세요</h2>
+            <p className="text-sm text-muted-foreground">
+              새 학원을 등록하거나, 기존 학원에 참여할 수 있습니다
+            </p>
+          </div>
+
+          {/* Option 1: Register New Academy */}
+          <Card 
+            className={`shadow-card border-border cursor-pointer transition-colors ${
+              isVerified ? 'hover:border-primary/50' : 'opacity-90'
+            }`}
+            onClick={handleRegisterNewAcademy}
+          >
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Building2 className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-medium text-foreground">새 학원 등록하기</h4>
+                  {!verificationLoading && !isVerified && (
+                    <Lock className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {isVerified 
+                    ? "원장으로서 새 학원을 등록합니다"
+                    : "사업자 인증 후 등록 가능합니다"
+                  }
+                </p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </CardContent>
           </Card>
+
+          {/* Divider */}
+          <div className="flex items-center gap-4 py-2">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-muted-foreground">또는</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          {/* Option 2: Join Existing Academy */}
+          <Card className="shadow-card border-border">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-accent" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-base">기존 학원에 참여하기</CardTitle>
+                  <CardDescription className="text-xs">
+                    참여 코드로 학원 관리자가 됩니다
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                학원 원장님에게 받은 6자리 참여 코드를 입력하세요.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="참여 코드 (예: ABC123)"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                  maxLength={6}
+                  className="uppercase text-center tracking-widest font-mono"
+                />
+                <Button 
+                  onClick={handleJoinByCode}
+                  disabled={joining || !joinCode.trim()}
+                >
+                  {joining ? <Loader2 className="w-4 h-4 animate-spin" /> : "참여"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Business Verification Link (if not verified) */}
+          {!isVerified && !verificationLoading && (
+            <Card 
+              className="shadow-card border-warning/20 bg-warning/5 cursor-pointer hover:border-warning/50 transition-colors"
+              onClick={() => navigate("/admin/verification")}
+            >
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5 text-warning" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-foreground text-sm">사업자 인증하기</h4>
+                  <p className="text-xs text-muted-foreground">
+                    새 학원을 등록하려면 사업자 인증이 필요합니다
+                  </p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Verification Status (if pending) */}
+          {isPending && (
+            <Card 
+              className="shadow-card border-warning/20 bg-warning/5 cursor-pointer"
+              onClick={() => navigate("/admin/verification")}
+            >
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-warning" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-foreground text-sm">사업자 인증 심사 중</h4>
+                  <p className="text-xs text-muted-foreground">
+                    영업일 1-2일 내 심사가 완료됩니다
+                  </p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+          )}
         </main>
         <AdminBottomNavigation />
       </div>
