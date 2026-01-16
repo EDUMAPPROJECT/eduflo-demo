@@ -28,11 +28,21 @@ interface Seminar {
   status: string;
 }
 
+interface FeedPost {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  image_url: string | null;
+  seminar_id: string | null;
+}
+
 interface CreatePostDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   academyId: string;
   onSuccess: () => void;
+  editingPost?: FeedPost | null;
 }
 
 const postTypes = [
@@ -41,7 +51,7 @@ const postTypes = [
   { value: 'event', label: '이벤트', icon: PartyPopper, description: '이벤트/프로모션' },
 ];
 
-const CreatePostDialog = ({ open, onOpenChange, academyId, onSuccess }: CreatePostDialogProps) => {
+const CreatePostDialog = ({ open, onOpenChange, academyId, onSuccess, editingPost }: CreatePostDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState<string>('notice');
@@ -51,6 +61,35 @@ const CreatePostDialog = ({ open, onOpenChange, academyId, onSuccess }: CreatePo
   const [targetRegions, setTargetRegions] = useState<string[]>([]);
   const [seminars, setSeminars] = useState<Seminar[]>([]);
   const [selectedSeminarId, setSelectedSeminarId] = useState<string>('');
+
+  // Reset form when dialog opens/closes or editingPost changes
+  useEffect(() => {
+    if (open) {
+      if (editingPost) {
+        setType(editingPost.type);
+        setTitle(editingPost.title);
+        setBody(editingPost.body || '');
+        setSelectedSeminarId(editingPost.seminar_id || '');
+        // Parse image URLs
+        if (editingPost.image_url) {
+          try {
+            const parsed = JSON.parse(editingPost.image_url);
+            setImageUrls(Array.isArray(parsed) ? parsed : [editingPost.image_url]);
+          } catch {
+            setImageUrls(editingPost.image_url ? [editingPost.image_url] : []);
+          }
+        } else {
+          setImageUrls([]);
+        }
+      } else {
+        setType('notice');
+        setTitle('');
+        setBody('');
+        setImageUrls([]);
+        setSelectedSeminarId('');
+      }
+    }
+  }, [open, editingPost]);
 
   // Get academy's target regions and seminars
   useEffect(() => {
@@ -102,26 +141,42 @@ const CreatePostDialog = ({ open, onOpenChange, academyId, onSuccess }: CreatePo
       let finalBody = body.trim();
       if (selectedSeminarId && (type === 'seminar' || type === 'event')) {
         const seminar = seminars.find(s => s.id === selectedSeminarId);
-        if (seminar) {
+        if (seminar && !finalBody.includes('📌 연결된 설명회:')) {
           finalBody = finalBody 
             ? `${finalBody}\n\n📌 연결된 설명회: ${seminar.title}`
             : `📌 연결된 설명회: ${seminar.title}`;
         }
       }
 
-      const { error } = await supabase
-        .from("feed_posts")
-        .insert({
-          academy_id: academyId,
-          type,
-          title: title.trim(),
-          body: finalBody || null,
-          image_url: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
-          target_regions: targetRegions,
-          seminar_id: selectedSeminarId || null,
-        });
+      const postData = {
+        type,
+        title: title.trim(),
+        body: finalBody || null,
+        image_url: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
+        target_regions: targetRegions,
+        seminar_id: selectedSeminarId || null,
+        updated_at: new Date().toISOString(),
+      };
 
-      if (error) throw error;
+      if (editingPost) {
+        // Update existing post
+        const { error } = await supabase
+          .from("feed_posts")
+          .update(postData)
+          .eq("id", editingPost.id);
+
+        if (error) throw error;
+      } else {
+        // Create new post
+        const { error } = await supabase
+          .from("feed_posts")
+          .insert({
+            academy_id: academyId,
+            ...postData,
+          });
+
+        if (error) throw error;
+      }
 
       // Reset form
       setType('notice');
@@ -132,8 +187,8 @@ const CreatePostDialog = ({ open, onOpenChange, academyId, onSuccess }: CreatePo
       
       onSuccess();
     } catch (error) {
-      console.error("Error creating post:", error);
-      toast({ title: "오류", description: "소식 등록에 실패했습니다", variant: "destructive" });
+      console.error("Error saving post:", error);
+      toast({ title: "오류", description: "소식 저장에 실패했습니다", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -149,11 +204,13 @@ const CreatePostDialog = ({ open, onOpenChange, academyId, onSuccess }: CreatePo
     });
   };
 
+  const isEditing = !!editingPost;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>새 소식 작성</DialogTitle>
+          <DialogTitle>{isEditing ? "소식 수정" : "새 소식 작성"}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
@@ -259,7 +316,7 @@ const CreatePostDialog = ({ open, onOpenChange, academyId, onSuccess }: CreatePo
             disabled={loading || !title.trim()}
           >
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {loading ? "등록 중..." : "소식 등록"}
+            {loading ? (isEditing ? "수정 중..." : "등록 중...") : (isEditing ? "소식 수정" : "소식 등록")}
           </Button>
         </div>
       </DialogContent>

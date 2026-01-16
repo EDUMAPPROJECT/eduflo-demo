@@ -25,7 +25,8 @@ import {
   Trash2, 
   Heart,
   Newspaper,
-  ArrowLeft
+  ArrowLeft,
+  Pencil
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -39,6 +40,7 @@ interface FeedPost {
   image_url: string | null;
   like_count: number;
   created_at: string;
+  seminar_id: string | null;
 }
 
 const typeConfig: Record<string, { label: string; icon: any; color: string }> = {
@@ -54,7 +56,8 @@ const FeedPostManagementPage = () => {
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [academyId, setAcademyId] = useState<string | null>(null);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState<FeedPost | null>(null);
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -65,20 +68,34 @@ const FeedPostManagementPage = () => {
         return;
       }
 
-      const { data: academy } = await supabase
-        .from("academies")
-        .select("id")
-        .eq("owner_id", session.user.id)
+      // Check if user has approved academy membership
+      const { data: memberData } = await supabase
+        .from("academy_members")
+        .select("academy_id")
+        .eq("user_id", session.user.id)
+        .eq("status", "approved")
         .maybeSingle();
 
-      if (!academy) {
+      let academyData = memberData?.academy_id ? { id: memberData.academy_id } : null;
+
+      if (!academyData) {
+        // Fallback: check if user is owner
+        const { data: ownerData } = await supabase
+          .from("academies")
+          .select("id")
+          .eq("owner_id", session.user.id)
+          .maybeSingle();
+        academyData = ownerData;
+      }
+
+      if (!academyData) {
         toast({ title: "학원 등록 필요", description: "먼저 학원을 등록해주세요", variant: "destructive" });
         navigate("/academy/setup");
         return;
       }
 
-      setAcademyId(academy.id);
-      await fetchPosts(academy.id);
+      setAcademyId(academyData.id);
+      await fetchPosts(academyData.id);
     };
 
     fetchAcademyAndPosts();
@@ -124,12 +141,33 @@ const FeedPostManagementPage = () => {
     }
   };
 
-  const handlePostCreated = () => {
-    setIsCreateDialogOpen(false);
+  const handlePostSuccess = () => {
+    setIsDialogOpen(false);
+    setEditingPost(null);
     if (academyId) {
       fetchPosts(academyId);
     }
-    toast({ title: "등록 완료", description: "소식이 등록되었습니다" });
+    toast({ title: editingPost ? "수정 완료" : "등록 완료", description: editingPost ? "소식이 수정되었습니다" : "소식이 등록되었습니다" });
+  };
+
+  const handleEditPost = (post: FeedPost) => {
+    setEditingPost(post);
+    setIsDialogOpen(true);
+  };
+
+  const handleNewPost = () => {
+    setEditingPost(null);
+    setIsDialogOpen(true);
+  };
+
+  const getImageUrl = (imageUrl: string | null) => {
+    if (!imageUrl) return null;
+    try {
+      const parsed = JSON.parse(imageUrl);
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : imageUrl;
+    } catch {
+      return imageUrl;
+    }
   };
 
   return (
@@ -147,7 +185,7 @@ const FeedPostManagementPage = () => {
       <main className="max-w-lg mx-auto px-4 py-6">
         {/* Add Button */}
         <Button
-          onClick={() => setIsCreateDialogOpen(true)}
+          onClick={handleNewPost}
           className="w-full mb-6 gap-2"
         >
           <Plus className="w-4 h-4" />
@@ -182,13 +220,14 @@ const FeedPostManagementPage = () => {
             {posts.map((post) => {
               const config = typeConfig[post.type] || typeConfig.notice;
               const Icon = config.icon;
+              const displayImage = getImageUrl(post.image_url);
 
               return (
                 <Card key={post.id} className="border-border overflow-hidden">
-                  {post.image_url && (
+                  {displayImage && (
                     <div className="h-32 overflow-hidden">
                       <img
-                        src={post.image_url}
+                        src={displayImage}
                         alt={post.title}
                         className="w-full h-full object-cover"
                       />
@@ -228,6 +267,14 @@ const FeedPostManagementPage = () => {
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={() => handleEditPost(post)}
+                          className="text-primary hover:text-primary hover:bg-primary/10"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => setDeletePostId(post.id)}
                           className="text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
@@ -243,13 +290,17 @@ const FeedPostManagementPage = () => {
         )}
       </main>
 
-      {/* Create Dialog */}
+      {/* Create/Edit Dialog */}
       {academyId && (
         <CreatePostDialog
-          open={isCreateDialogOpen}
-          onOpenChange={setIsCreateDialogOpen}
+          open={isDialogOpen}
+          onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) setEditingPost(null);
+          }}
           academyId={academyId}
-          onSuccess={handlePostCreated}
+          onSuccess={handlePostSuccess}
+          editingPost={editingPost}
         />
       )}
 
