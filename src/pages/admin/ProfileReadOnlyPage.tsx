@@ -257,11 +257,34 @@ const ProfileReadOnlyPage = () => {
               <CardContent className="space-y-4">
                 {/* Profile Image */}
                 {academy.profile_image && (
-                  <div className="flex justify-center">
-                    <Avatar className="w-24 h-24">
-                      <AvatarImage src={academy.profile_image} alt={academy.name} />
-                      <AvatarFallback>{academy.name.slice(0, 2)}</AvatarFallback>
-                    </Avatar>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground flex items-center gap-1 mb-2">
+                      <Image className="w-4 h-4" />
+                      대표 사진
+                    </label>
+                    <div className="flex justify-center">
+                      <Avatar className="w-24 h-24">
+                        <AvatarImage src={academy.profile_image} alt={academy.name} />
+                        <AvatarFallback>{academy.name.slice(0, 2)}</AvatarFallback>
+                      </Avatar>
+                    </div>
+                  </div>
+                )}
+
+                {/* Banner Image */}
+                {(academy as any).banner_image && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground flex items-center gap-1 mb-2">
+                      <Image className="w-4 h-4" />
+                      배너 사진
+                    </label>
+                    <div className="rounded-lg overflow-hidden">
+                      <img 
+                        src={(academy as any).banner_image} 
+                        alt={`${academy.name} 배너`}
+                        className="w-full h-32 object-cover"
+                      />
+                    </div>
                   </div>
                 )}
 

@@ -17,6 +17,7 @@ export type Database = {
       academies: {
         Row: {
           address: string | null
+          banner_image: string | null
           created_at: string
           description: string | null
           id: string
@@ -38,6 +39,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          banner_image?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -59,6 +61,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          banner_image?: string | null
           created_at?: string
           description?: string | null
           id?: string

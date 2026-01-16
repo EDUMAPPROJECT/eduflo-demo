@@ -111,6 +111,7 @@ const ProfileManagementPage = () => {
   const [address, setAddress] = useState("");
   const [description, setDescription] = useState("");
   const [profileImage, setProfileImage] = useState("");
+  const [bannerImage, setBannerImage] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [targetRegions, setTargetRegions] = useState<string[]>([]);
   const [targetTags, setTargetTags] = useState<string[]>([]);
@@ -232,6 +233,7 @@ const ProfileManagementPage = () => {
           setAddress(academyData.address || "");
           setDescription(academyData.description || "");
           setProfileImage(academyData.profile_image || "");
+          setBannerImage((academyData as any).banner_image || "");
           setTags(academyData.tags || []);
           setTargetRegions((academyData as any).target_regions || []);
           setTargetTags((academyData as any).target_tags || []);
@@ -255,6 +257,7 @@ const ProfileManagementPage = () => {
           setAddress(ownerData.address || "");
           setDescription(ownerData.description || "");
           setProfileImage(ownerData.profile_image || "");
+          setBannerImage((ownerData as any).banner_image || "");
           setTags(ownerData.tags || []);
           setTargetRegions((ownerData as any).target_regions || []);
           setTargetTags((ownerData as any).target_tags || []);
@@ -332,6 +335,7 @@ const ProfileManagementPage = () => {
           address: address || null,
           description: validatedData.description,
           profile_image: validatedData.profile_image,
+          banner_image: bannerImage || null,
           tags: validatedData.tags,
           target_regions: targetRegions,
           target_tags: targetTags,
@@ -810,13 +814,35 @@ const ProfileManagementPage = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <Image className="w-4 h-4 text-primary" />
-                  학원 대표 사진
+                  대표 사진 (정사각형)
                 </CardTitle>
+                <CardDescription className="text-xs">
+                  프로필 목록, 검색 결과에 표시됩니다
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ImageUpload
                   value={profileImage}
                   onChange={setProfileImage}
+                  folder="academies"
+                />
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Image className="w-4 h-4 text-primary" />
+                  배너 사진 (직사각형)
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  학원 상세 페이지 상단에 표시됩니다
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ImageUpload
+                  value={bannerImage}
+                  onChange={setBannerImage}
                   folder="academies"
                 />
               </CardContent>
@@ -952,7 +978,7 @@ const ProfileManagementPage = () => {
 
             <Button className="w-full gap-2" onClick={handleSaveProfile} disabled={saving}>
               <Save className="w-4 h-4" />
-              {saving ? "저장 중..." : "변경사항 저장"}
+              {saving ? "저장 중..." : "프로필 저장"}
             </Button>
           </TabsContent>
 

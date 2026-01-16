@@ -236,6 +236,18 @@ const MyReservationsPage = () => {
     });
   };
 
+  // Check if seminar date has passed (auto-close)
+  const isSeminarExpired = (dateString: string) => {
+    return new Date(dateString) < new Date();
+  };
+
+  // Get effective status considering expiration
+  const getEffectiveSeminarStatus = (seminar?: SeminarApplication["seminar"]) => {
+    if (!seminar) return "closed";
+    if (isSeminarExpired(seminar.date)) return "closed";
+    return seminar.status;
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen bg-background pb-20">
@@ -398,10 +410,10 @@ const MyReservationsPage = () => {
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge 
-                            variant={app.seminar?.status === "recruiting" ? "default" : "secondary"}
+                            variant={getEffectiveSeminarStatus(app.seminar) === "recruiting" ? "default" : "secondary"}
                             className="text-xs"
                           >
-                            {app.seminar?.status === "recruiting" ? "모집중" : "마감"}
+                            {getEffectiveSeminarStatus(app.seminar) === "recruiting" ? "모집중" : "마감"}
                           </Badge>
                           <button
                             onClick={(e) => {
@@ -557,10 +569,10 @@ const MyReservationsPage = () => {
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge 
-                            variant={app.seminar?.status === "recruiting" ? "default" : "secondary"}
+                            variant={getEffectiveSeminarStatus(app.seminar) === "recruiting" ? "default" : "secondary"}
                             className="text-xs"
                           >
-                            {app.seminar?.status === "recruiting" ? "모집중" : "마감"}
+                            {getEffectiveSeminarStatus(app.seminar) === "recruiting" ? "모집중" : "마감"}
                           </Badge>
                           <button
                             onClick={(e) => {

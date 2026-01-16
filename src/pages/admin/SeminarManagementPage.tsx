@@ -346,6 +346,17 @@ const SeminarManagementPage = () => {
     });
   };
 
+  // Check if seminar date has passed (auto-close)
+  const isExpired = (dateString: string) => {
+    return new Date(dateString) < new Date();
+  };
+
+  // Get effective status considering expiration
+  const getEffectiveStatus = (seminar: Seminar) => {
+    if (isExpired(seminar.date)) return "closed";
+    return seminar.status;
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
@@ -385,84 +396,89 @@ const SeminarManagementPage = () => {
           </Card>
         ) : (
           <div className="space-y-3">
-            {seminars.map((seminar) => (
-              <Card key={seminar.id} className="shadow-card">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        {/* Only show badge for recruiting status */}
-                        {seminar.status === "recruiting" && (
-                          <Badge variant="default">모집중</Badge>
-                        )}
-                        {seminar.status === "closed" && (
-                          <Badge variant="secondary">마감</Badge>
-                        )}
-                        {seminar.subject && (
-                          <Badge variant="outline">{seminar.subject}</Badge>
-                        )}
+            {seminars.map((seminar) => {
+              const effectiveStatus = getEffectiveStatus(seminar);
+              const expired = isExpired(seminar.date);
+              return (
+                <Card key={seminar.id} className="shadow-card">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          {/* Show badge based on effective status */}
+                          {effectiveStatus === "recruiting" && (
+                            <Badge variant="default">모집중</Badge>
+                          )}
+                          {effectiveStatus === "closed" && (
+                            <Badge variant="secondary">{expired ? "기간 마감" : "마감"}</Badge>
+                          )}
+                          {seminar.subject && (
+                            <Badge variant="outline">{seminar.subject}</Badge>
+                          )}
+                        </div>
+                        <h4 className="font-semibold text-foreground">
+                          {seminar.title}
+                        </h4>
                       </div>
-                      <h4 className="font-semibold text-foreground">
-                        {seminar.title}
-                      </h4>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(seminar)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteId(seminar.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditDialog(seminar)}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeleteId(seminar.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        {formatDate(seminar.date)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="w-4 h-4" />
+                        {seminar.application_count}/{seminar.capacity || 30}명
+                      </span>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      {formatDate(seminar.date)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="w-4 h-4" />
-                      {seminar.application_count}/{seminar.capacity || 30}명
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleStatus(seminar)}
-                      className="flex-1"
-                    >
-                      {seminar.status === "recruiting" ? "마감하기" : "모집 재개"}
-                    </Button>
-                    <Dialog>
+                    <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => toggleStatus(seminar)}
                         className="flex-1"
-                        onClick={() => {
-                          setSelectedSeminar(seminar);
-                          fetchApplications(seminar.id);
-                        }}
+                        disabled={expired}
                       >
-                        신청자 명단
-                        <ChevronRight className="w-4 h-4 ml-1" />
+                        {expired ? "기간 종료" : (effectiveStatus === "recruiting" ? "마감하기" : "모집 재개")}
                       </Button>
-                    </Dialog>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      <Dialog>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => {
+                            setSelectedSeminar(seminar);
+                            fetchApplications(seminar.id);
+                          }}
+                        >
+                          신청자 명단
+                          <ChevronRight className="w-4 h-4 ml-1" />
+                        </Button>
+                      </Dialog>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </main>
