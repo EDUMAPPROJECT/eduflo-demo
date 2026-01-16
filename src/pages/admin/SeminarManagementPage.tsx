@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AdminBottomNavigation from "@/components/AdminBottomNavigation";
-import Logo from "@/components/Logo";
 import ImageUpload from "@/components/ImageUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,8 +14,17 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -30,6 +39,9 @@ import {
   ChevronRight,
   Clock,
   GraduationCap,
+  ArrowLeft,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -62,14 +74,17 @@ interface Application {
 }
 
 const SeminarManagementPage = () => {
+  const navigate = useNavigate();
   const [seminars, setSeminars] = useState<Seminar[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [academyId, setAcademyId] = useState<string | null>(null);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingSeminar, setEditingSeminar] = useState<Seminar | null>(null);
   const [selectedSeminar, setSelectedSeminar] = useState<Seminar | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loadingApps, setLoadingApps] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -94,16 +109,29 @@ const SeminarManagementPage = () => {
 
   const fetchAcademyAndSeminars = async (userId: string) => {
     try {
-      // Get user's academy
-      const { data: academy } = await supabase
-        .from("academies")
-        .select("id")
-        .eq("owner_id", userId)
+      // Check if user has approved academy membership
+      const { data: memberData } = await supabase
+        .from("academy_members")
+        .select("academy_id")
+        .eq("user_id", userId)
+        .eq("status", "approved")
         .maybeSingle();
 
-      if (academy) {
-        setAcademyId(academy.id);
-        fetchSeminars(academy.id);
+      let academyData = memberData?.academy_id ? { id: memberData.academy_id } : null;
+
+      if (!academyData) {
+        // Fallback: check if user is owner
+        const { data: ownerData } = await supabase
+          .from("academies")
+          .select("id")
+          .eq("owner_id", userId)
+          .maybeSingle();
+        academyData = ownerData;
+      }
+
+      if (academyData) {
+        setAcademyId(academyData.id);
+        fetchSeminars(academyData.id);
       } else {
         setLoading(false);
       }
@@ -178,7 +206,40 @@ const SeminarManagementPage = () => {
     }
   };
 
-  const handleCreateSeminar = async () => {
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setDate("");
+    setTime("");
+    setLocation("");
+    setCapacity(30);
+    setSubject("");
+    setTargetGrade("");
+    setImageUrl("");
+    setEditingSeminar(null);
+  };
+
+  const openEditDialog = (seminar: Seminar) => {
+    setEditingSeminar(seminar);
+    setTitle(seminar.title);
+    setDescription(seminar.description || "");
+    const seminarDate = new Date(seminar.date);
+    setDate(seminarDate.toISOString().split("T")[0]);
+    setTime(seminarDate.toTimeString().slice(0, 5));
+    setLocation(seminar.location || "");
+    setCapacity(seminar.capacity || 30);
+    setSubject(seminar.subject || "");
+    setTargetGrade(seminar.target_grade || "");
+    setImageUrl(seminar.image_url || "");
+    setIsDialogOpen(true);
+  };
+
+  const openCreateDialog = () => {
+    resetForm();
+    setIsDialogOpen(true);
+  };
+
+  const handleSaveSeminar = async () => {
     if (!academyId) {
       toast.error("학원 정보가 없습니다");
       return;
@@ -193,8 +254,7 @@ const SeminarManagementPage = () => {
     try {
       const dateTime = new Date(`${date}T${time}`).toISOString();
 
-      const { error } = await supabase.from("seminars").insert({
-        academy_id: academyId,
+      const seminarData = {
         title,
         description: description || null,
         date: dateTime,
@@ -203,20 +263,56 @@ const SeminarManagementPage = () => {
         subject: subject || null,
         target_grade: targetGrade || null,
         image_url: imageUrl || null,
-        status: "recruiting",
-      });
+      };
 
-      if (error) throw error;
+      if (editingSeminar) {
+        const { error } = await supabase
+          .from("seminars")
+          .update(seminarData)
+          .eq("id", editingSeminar.id);
 
-      toast.success("설명회가 등록되었습니다");
-      setIsCreateOpen(false);
+        if (error) throw error;
+        toast.success("설명회가 수정되었습니다");
+      } else {
+        const { error } = await supabase.from("seminars").insert({
+          academy_id: academyId,
+          ...seminarData,
+          status: "recruiting",
+        });
+
+        if (error) throw error;
+        toast.success("설명회가 등록되었습니다");
+      }
+
+      setIsDialogOpen(false);
       resetForm();
       fetchSeminars(academyId);
     } catch (error) {
-      console.error("Error creating seminar:", error);
-      toast.error("등록에 실패했습니다");
+      console.error("Error saving seminar:", error);
+      toast.error("저장에 실패했습니다");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteSeminar = async () => {
+    if (!deleteId || !academyId) return;
+
+    try {
+      const { error } = await supabase
+        .from("seminars")
+        .delete()
+        .eq("id", deleteId);
+
+      if (error) throw error;
+
+      setSeminars((prev) => prev.filter((s) => s.id !== deleteId));
+      toast.success("설명회가 삭제되었습니다");
+    } catch (error) {
+      console.error("Error deleting seminar:", error);
+      toast.error("삭제에 실패했습니다");
+    } finally {
+      setDeleteId(null);
     }
   };
 
@@ -240,18 +336,6 @@ const SeminarManagementPage = () => {
     }
   };
 
-  const resetForm = () => {
-    setTitle("");
-    setDescription("");
-    setDate("");
-    setTime("");
-    setLocation("");
-    setCapacity(30);
-    setSubject("");
-    setTargetGrade("");
-    setImageUrl("");
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("ko-KR", {
@@ -266,128 +350,20 @@ const SeminarManagementPage = () => {
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
       <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
-          <Logo size="sm" showText={false} />
-          <span className="text-xs font-medium text-primary bg-secondary px-2 py-1 rounded-full">
-            설명회 관리
-          </span>
+        <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/admin/home")}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <h1 className="font-semibold text-foreground">설명회 관리</h1>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6">
         {/* Create Button */}
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button className="w-full mb-6 h-12">
-              <Plus className="w-5 h-5 mr-2" />
-              새 설명회 등록
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-sm mx-auto max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>설명회 등록</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>제목 *</Label>
-                <Input
-                  placeholder="설명회 제목"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>날짜 *</Label>
-                  <Input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>시간 *</Label>
-                  <Input
-                    type="time"
-                    value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>장소</Label>
-                <Input
-                  placeholder="설명회 장소"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>정원</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={capacity}
-                  onChange={(e) => setCapacity(Number(e.target.value))}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>과목</Label>
-                  <Select value={subject} onValueChange={setSubject}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="수학">수학</SelectItem>
-                      <SelectItem value="영어">영어</SelectItem>
-                      <SelectItem value="국어">국어</SelectItem>
-                      <SelectItem value="과학">과학</SelectItem>
-                      <SelectItem value="코딩">코딩</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>대상 학년</Label>
-                  <Select value={targetGrade} onValueChange={setTargetGrade}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="초등학생">초등학생</SelectItem>
-                      <SelectItem value="중학생">중학생</SelectItem>
-                      <SelectItem value="고등학생">고등학생</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>포스터 이미지</Label>
-                <ImageUpload
-                  value={imageUrl}
-                  onChange={setImageUrl}
-                  folder="seminars"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>설명</Label>
-                <Textarea
-                  placeholder="설명회 상세 내용"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
-                />
-              </div>
-              <Button
-                className="w-full"
-                onClick={handleCreateSeminar}
-                disabled={submitting}
-              >
-                {submitting ? "등록 중..." : "등록하기"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button className="w-full mb-6 h-12" onClick={openCreateDialog}>
+          <Plus className="w-5 h-5 mr-2" />
+          새 설명회 등록
+        </Button>
 
         {/* Seminars List */}
         {loading ? (
@@ -415,15 +391,13 @@ const SeminarManagementPage = () => {
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <Badge
-                          variant={
-                            seminar.status === "recruiting"
-                              ? "default"
-                              : "secondary"
-                          }
-                        >
-                          {seminar.status === "recruiting" ? "모집중" : "마감"}
-                        </Badge>
+                        {/* Only show badge for recruiting status */}
+                        {seminar.status === "recruiting" && (
+                          <Badge variant="default">모집중</Badge>
+                        )}
+                        {seminar.status === "closed" && (
+                          <Badge variant="secondary">마감</Badge>
+                        )}
                         {seminar.subject && (
                           <Badge variant="outline">{seminar.subject}</Badge>
                         )}
@@ -432,13 +406,23 @@ const SeminarManagementPage = () => {
                         {seminar.title}
                       </h4>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleStatus(seminar)}
-                    >
-                      {seminar.status === "recruiting" ? "마감" : "재개"}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditDialog(seminar)}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleteId(seminar.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
@@ -452,78 +436,219 @@ const SeminarManagementPage = () => {
                     </span>
                   </div>
 
-                  <Dialog>
-                    <DialogTrigger asChild>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleStatus(seminar)}
+                      className="flex-1"
+                    >
+                      {seminar.status === "recruiting" ? "마감하기" : "모집 재개"}
+                    </Button>
+                    <Dialog>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="w-full"
+                        className="flex-1"
                         onClick={() => {
                           setSelectedSeminar(seminar);
                           fetchApplications(seminar.id);
                         }}
                       >
-                        신청자 명단 보기
+                        신청자 명단
                         <ChevronRight className="w-4 h-4 ml-1" />
                       </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-sm mx-auto max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>신청자 명단</DialogTitle>
-                      </DialogHeader>
-                      <div className="py-4">
-                        {loadingApps ? (
-                          <div className="flex items-center justify-center py-8">
-                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-                          </div>
-                        ) : applications.length === 0 ? (
-                          <p className="text-center text-muted-foreground py-8">
-                            신청자가 없습니다
-                          </p>
-                        ) : (
-                          <div className="space-y-3">
-                            {applications.map((app) => (
-                              <div
-                                key={app.id}
-                                className="bg-muted/50 rounded-lg p-3"
-                              >
-                                <div className="flex items-center gap-2 mb-2">
-                                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <GraduationCap className="w-4 h-4 text-primary" />
-                                  </div>
-                                  <div>
-                                    <p className="font-medium text-sm">
-                                      {app.student_name}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {app.student_grade || "학년 미정"} ·{" "}
-                                      {app.attendee_count || 1}명
-                                    </p>
-                                  </div>
-                                </div>
-                                {app.profile?.phone && (
-                                  <p className="text-xs text-muted-foreground mb-1">
-                                    📞 {app.profile.phone}
-                                  </p>
-                                )}
-                                {app.message && (
-                                  <p className="text-xs text-muted-foreground bg-background rounded p-2">
-                                    💬 {app.message}
-                                  </p>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                    </Dialog>
+                  </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
       </main>
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        setIsDialogOpen(open);
+        if (!open) resetForm();
+      }}>
+        <DialogContent className="max-w-sm mx-auto max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingSeminar ? "설명회 수정" : "설명회 등록"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>제목 *</Label>
+              <Input
+                placeholder="설명회 제목"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>날짜 *</Label>
+                <Input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>시간 *</Label>
+                <Input
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>장소</Label>
+              <Input
+                placeholder="설명회 장소"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>정원</Label>
+              <Input
+                type="number"
+                min={1}
+                value={capacity}
+                onChange={(e) => setCapacity(Number(e.target.value))}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>과목</Label>
+                <Select value={subject} onValueChange={setSubject}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="수학">수학</SelectItem>
+                    <SelectItem value="영어">영어</SelectItem>
+                    <SelectItem value="국어">국어</SelectItem>
+                    <SelectItem value="과학">과학</SelectItem>
+                    <SelectItem value="코딩">코딩</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>대상 학년</Label>
+                <Select value={targetGrade} onValueChange={setTargetGrade}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="초등학생">초등학생</SelectItem>
+                    <SelectItem value="중학생">중학생</SelectItem>
+                    <SelectItem value="고등학생">고등학생</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>포스터 이미지</Label>
+              <ImageUpload
+                value={imageUrl}
+                onChange={setImageUrl}
+                folder="seminars"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>설명</Label>
+              <Textarea
+                placeholder="설명회 상세 내용"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleSaveSeminar}
+              disabled={submitting}
+            >
+              {submitting ? "저장 중..." : (editingSeminar ? "수정하기" : "등록하기")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Applications Dialog */}
+      <Dialog open={!!selectedSeminar} onOpenChange={(open) => !open && setSelectedSeminar(null)}>
+        <DialogContent className="max-w-sm mx-auto max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>신청자 명단</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {loadingApps ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+              </div>
+            ) : applications.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                신청자가 없습니다
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {applications.map((app) => (
+                  <div
+                    key={app.id}
+                    className="bg-muted/50 rounded-lg p-3"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <GraduationCap className="w-4 h-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">
+                          {app.student_name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {app.student_grade || "학년 미정"} ·{" "}
+                          {app.attendee_count || 1}명
+                        </p>
+                      </div>
+                    </div>
+                    {app.profile?.phone && (
+                      <p className="text-xs text-muted-foreground mb-1">
+                        📞 {app.profile.phone}
+                      </p>
+                    )}
+                    {app.message && (
+                      <p className="text-xs text-muted-foreground bg-background rounded p-2">
+                        💬 {app.message}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>설명회 삭제</AlertDialogTitle>
+            <AlertDialogDescription>
+              이 설명회를 삭제하시겠습니까? 관련 신청 데이터도 함께 삭제됩니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteSeminar} className="bg-destructive text-destructive-foreground">
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AdminBottomNavigation />
     </div>
