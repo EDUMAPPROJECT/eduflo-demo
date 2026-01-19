@@ -14,6 +14,7 @@ import PostDetailDialog from "@/components/PostDetailDialog";
 import AdminHeader from "@/components/AdminHeader";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import RecommendedAcademies from "@/components/RecommendedAcademies";
+import TodayScheduleSection from "@/components/TodayScheduleSection";
 
 interface Seminar {
   id: string;
@@ -221,6 +222,11 @@ const HomePage = () => {
             <LearningStyleBanner />
           </section>
         )}
+
+        {/* Today's Schedule Section */}
+        <section className="mb-6 px-4">
+          <TodayScheduleSection />
+        </section>
 
         {/* Greeting & Quick Action Menu */}
         <section className="mb-6 bg-primary/10 mx-4 rounded-xl p-4">
