@@ -174,6 +174,24 @@ const MyPage = () => {
           </div>
         </div>
 
+        {/* My Activity Menu List */}
+        <div className="bg-card rounded-2xl shadow-card overflow-hidden mb-6">
+          {user && (
+            <>
+              <MenuItemButton 
+                icon={BookOpen} 
+                label="MY CLASS" 
+                onClick={() => navigate("/my/classes")} 
+              />
+              <MenuItemButton 
+                icon={Heart} 
+                label="찜한 학원" 
+                onClick={() => navigate("/my/bookmarks")} 
+              />
+            </>
+          )}
+        </div>
+
         {/* Service Menu List */}
         <div className="bg-card rounded-2xl shadow-card overflow-hidden mb-6">
           {user && (
@@ -192,24 +210,6 @@ const MyPage = () => {
                 icon={Sparkles} 
                 label="성향 테스트" 
                 onClick={() => navigate("/preference-test")} 
-              />
-            </>
-          )}
-        </div>
-
-        {/* My Activity Menu List */}
-        <div className="bg-card rounded-2xl shadow-card overflow-hidden mb-6">
-          {user && (
-            <>
-              <MenuItemButton 
-                icon={BookOpen} 
-                label="MY CLASS" 
-                onClick={() => navigate("/my/classes")} 
-              />
-              <MenuItemButton 
-                icon={Heart} 
-                label="찜한 학원" 
-                onClick={() => navigate("/my/bookmarks")} 
               />
             </>
           )}

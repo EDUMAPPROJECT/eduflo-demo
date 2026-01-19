@@ -23,7 +23,9 @@ import {
   GraduationCap,
   Calendar,
   MapPin,
-  X
+  X,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
@@ -62,6 +64,7 @@ const MyReservationsPage = () => {
   const [reservations, setReservations] = useState<ReservationWithAcademy[]>([]);
   const [seminarApplications, setSeminarApplications] = useState<SeminarApplication[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showPastReservations, setShowPastReservations] = useState(false);
   const [cancelDialog, setCancelDialog] = useState<{
     isOpen: boolean;
     type: "seminar" | "reservation" | null;
@@ -305,18 +308,37 @@ const MyReservationsPage = () => {
   };
 
   // Filter out past reservations and sort by date (earliest first)
-  const filteredReservations = reservations
+  const upcomingReservations = reservations
     .filter(r => !isReservationExpired(r.reservation_date))
     .sort((a, b) => new Date(a.reservation_date).getTime() - new Date(b.reservation_date).getTime());
 
+  // Past reservations
+  const pastReservations = reservations
+    .filter(r => isReservationExpired(r.reservation_date))
+    .sort((a, b) => new Date(b.reservation_date).getTime() - new Date(a.reservation_date).getTime());
+
   // Filter out past seminars and sort by date (earliest first)
-  const filteredSeminarApplications = seminarApplications
+  const upcomingSeminarApplications = seminarApplications
     .filter(app => app.seminar && !isSeminarExpired(app.seminar.date))
     .sort((a, b) => {
       const dateA = a.seminar?.date ? new Date(a.seminar.date).getTime() : 0;
       const dateB = b.seminar?.date ? new Date(b.seminar.date).getTime() : 0;
       return dateA - dateB;
     });
+
+  // Past seminars
+  const pastSeminarApplications = seminarApplications
+    .filter(app => app.seminar && isSeminarExpired(app.seminar.date))
+    .sort((a, b) => {
+      const dateA = a.seminar?.date ? new Date(a.seminar.date).getTime() : 0;
+      const dateB = b.seminar?.date ? new Date(b.seminar.date).getTime() : 0;
+      return dateB - dateA;
+    });
+
+  const filteredReservations = upcomingReservations;
+  const filteredSeminarApplications = upcomingSeminarApplications;
+
+  const hasPastItems = pastReservations.length > 0 || pastSeminarApplications.length > 0;
 
   if (!user) {
     return (
@@ -514,6 +536,103 @@ const MyReservationsPage = () => {
                     </CardContent>
                   </Card>
                 ))}
+
+                {/* Show Past Reservations Button */}
+                {hasPastItems && (
+                  <button
+                    onClick={() => setShowPastReservations(!showPastReservations)}
+                    className="w-full flex items-center justify-center gap-1 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPastReservations ? (
+                      <>
+                        <ChevronUp className="w-3 h-3" />
+                        지난 예약 숨기기
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-3 h-3" />
+                        지난 예약 보기 ({pastReservations.length + pastSeminarApplications.length})
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {/* Past Reservations */}
+                {showPastReservations && (
+                  <div className="space-y-3 pt-2 border-t border-border">
+                    <p className="text-xs text-muted-foreground font-medium">지난 예약</p>
+                    
+                    {/* Past 방문 상담 */}
+                    {pastReservations.map((reservation) => (
+                      <Card 
+                        key={`past-res-${reservation.id}`} 
+                        className="shadow-card border-border cursor-pointer hover:shadow-soft transition-all opacity-60"
+                        onClick={() => openReservationDetail(reservation)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                                <Calendar className="w-4 h-4 text-muted-foreground" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">방문</Badge>
+                                  <h4 className="font-medium text-foreground text-sm line-clamp-1">
+                                    {reservation.academy?.name || "학원"}
+                                  </h4>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {reservation.student_name} · {reservation.student_grade || "학년 미정"}
+                                </p>
+                              </div>
+                            </div>
+                            <Badge variant="secondary" className="text-xs">지난 예약</Badge>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Clock className="w-4 h-4" />
+                            <span>{formatReservationDate(reservation.reservation_date, reservation.reservation_time)}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+
+                    {/* Past 설명회 */}
+                    {pastSeminarApplications.map((app) => (
+                      <Card 
+                        key={`past-sem-${app.id}`} 
+                        className="shadow-card border-border cursor-pointer hover:shadow-soft transition-all opacity-60"
+                        onClick={() => openSeminarDetail(app)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                                <GraduationCap className="w-4 h-4 text-muted-foreground" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">설명회</Badge>
+                                  <h4 className="font-medium text-foreground text-sm line-clamp-1">
+                                    {app.seminar?.title || "설명회"}
+                                  </h4>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {app.seminar?.academy?.name} · {app.student_name}
+                                </p>
+                              </div>
+                            </div>
+                            <Badge variant="secondary" className="text-xs">지난 예약</Badge>
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Calendar className="w-3 h-3" />
+                            <span>{app.seminar?.date && formatDate(app.seminar.date)}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
 
               </div>
             )}
