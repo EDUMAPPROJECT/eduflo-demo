@@ -53,6 +53,7 @@ interface Academy {
   description: string | null;
   address: string | null;
   profile_image: string | null;
+  banner_image: string | null;
   tags: string[] | null;
   is_mou: boolean | null;
 }
@@ -394,9 +395,15 @@ const AcademyDetailPage = () => {
         </div>
       </header>
 
-      {/* Hero Image */}
+      {/* Hero Image - Use banner_image for hero, fallback to profile_image */}
       <div className="h-48 bg-gradient-to-br from-primary/20 to-accent/20">
-        {academy.profile_image ? (
+        {academy.banner_image ? (
+          <img
+            src={academy.banner_image}
+            alt={academy.name}
+            className="w-full h-full object-cover"
+          />
+        ) : academy.profile_image ? (
           <img
             src={academy.profile_image}
             alt={academy.name}

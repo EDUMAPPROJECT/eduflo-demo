@@ -106,19 +106,19 @@ const HomePage = () => {
       setLoadingPosts(true);
 
       const { data, error } = await supabase
-        .from("posts")
+        .from("feed_posts")
         .select(`
           id,
           title,
-          content,
-          category,
+          body,
+          type,
           image_url,
           created_at,
+          target_regions,
           academy:academies!inner (
             id,
             name,
-            profile_image,
-            target_regions
+            profile_image
           )
         `)
         .order("created_at", { ascending: false })
@@ -126,17 +126,17 @@ const HomePage = () => {
 
       if (error) throw error;
 
-      // Filter by target_regions
+      // Filter by target_regions (stored on feed_posts table)
       const filtered = (data || []).filter((post: any) => {
-        const regions = post.academy?.target_regions || [];
+        const regions = post.target_regions || [];
         return regions.includes(regionId);
       });
 
       setPosts(filtered.map((p: any) => ({
         id: p.id,
         title: p.title,
-        content: p.content,
-        category: p.category,
+        content: p.body,
+        category: p.type,
         image_url: p.image_url,
         created_at: p.created_at,
         academy: {
@@ -193,7 +193,7 @@ const HomePage = () => {
     setPostDialogOpen(true);
   };
 
-  const hasNoData = !loadingSeminars && seminars.length === 0;
+  const hasNoData = !loadingSeminars && !loadingPosts && seminars.length === 0 && posts.length === 0;
 
   return (
     <div className="min-h-screen bg-background pb-20">
