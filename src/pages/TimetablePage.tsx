@@ -210,13 +210,29 @@ const TimetablePage = () => {
     }
   };
 
-  // Find enrollment info for selected block
-  const getEnrollmentForBlock = (block: ScheduleBlock | null) => {
-    if (!block || block.isManual) return null;
-    return enrollments.find(e => block.id.startsWith(e.class_id));
+  // Find enrollment info for selected block by colorIndex
+  const getEnrollmentByColorIndex = (colorIndex: number | null) => {
+    if (colorIndex === null || colorIndex >= enrollments.length) return null;
+    return enrollments[colorIndex];
   };
 
-  const selectedEnrollment = getEnrollmentForBlock(selectedBlock);
+  // Get all schedule blocks with same colorIndex (same class)
+  const getBlocksForColorIndex = (colorIndex: number | null) => {
+    if (colorIndex === null) return [];
+    return scheduleBlocks.filter(b => b.colorIndex === colorIndex && !b.isManual);
+  };
+
+  const selectedEnrollment = getEnrollmentByColorIndex(selectedBlock?.colorIndex ?? null);
+  const selectedClassBlocks = getBlocksForColorIndex(selectedBlock?.colorIndex ?? null);
+
+  // Handle card click to show class detail
+  const handleCardClick = (colorIndex: number) => {
+    const block = scheduleBlocks.find(b => b.colorIndex === colorIndex && !b.isManual);
+    if (block) {
+      setSelectedBlock(block);
+      setShowClassDetailDialog(true);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -334,7 +350,7 @@ const TimetablePage = () => {
                   <div
                     key={enrollment.id}
                     className="p-3 bg-card rounded-lg border border-border flex items-start gap-3 cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => enrollment.class?.academy?.id && navigate(`/academy/${enrollment.class.academy.id}`)}
+                    onClick={() => handleCardClick(idx)}
                   >
                     <div
                       className={`w-3 h-10 rounded-sm shrink-0 ${CLASS_COLORS[idx % CLASS_COLORS.length].bg}`}
@@ -411,14 +427,22 @@ const TimetablePage = () => {
           </DialogHeader>
           
           <div className="space-y-4 py-4">
-            {/* Schedule Info */}
+            {/* Schedule Info - Show all days/times for this class */}
             <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
               <Clock className="w-4 h-4 text-muted-foreground mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium">{selectedBlock?.day}요일</p>
-                <p className="text-muted-foreground">
-                  {selectedBlock && `${selectedBlock.startHour.toString().padStart(2, '0')}:${selectedBlock.startMinute.toString().padStart(2, '0')} - ${selectedBlock.endHour.toString().padStart(2, '0')}:${selectedBlock.endMinute.toString().padStart(2, '0')}`}
-                </p>
+              <div className="text-sm space-y-1">
+                {selectedClassBlocks.length > 0 ? (
+                  selectedClassBlocks.map((block, idx) => (
+                    <div key={idx}>
+                      <p className="font-medium">{block.day}요일</p>
+                      <p className="text-muted-foreground">
+                        {`${block.startHour.toString().padStart(2, '0')}:${block.startMinute.toString().padStart(2, '0')} - ${block.endHour.toString().padStart(2, '0')}:${block.endMinute.toString().padStart(2, '0')}`}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground">시간 정보 없음</p>
+                )}
               </div>
             </div>
 
