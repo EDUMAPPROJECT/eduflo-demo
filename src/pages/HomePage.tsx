@@ -216,12 +216,6 @@ const HomePage = () => {
           <AnnouncementBanner />
         </section>
 
-        {/* Learning Style Banner (only if no profile tags and no learning style) */}
-        {!checkingProfile && !learningStyle && profileTags.length === 0 && (
-          <section className="mb-6 px-4">
-            <LearningStyleBanner />
-          </section>
-        )}
 
         {/* Greeting & Quick Action Menu */}
         <section className="mb-6 bg-primary/10 mx-4 rounded-xl p-4">
