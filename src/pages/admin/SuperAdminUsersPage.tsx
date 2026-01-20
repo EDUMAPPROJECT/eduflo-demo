@@ -224,27 +224,35 @@ const SuperAdminUsersPage = () => {
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-2">
           <Card className="shadow-card">
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-foreground">{users.length}</p>
+            <CardContent className="p-3 text-center">
+              <p className="text-xl font-bold text-foreground">{users.length}</p>
               <p className="text-xs text-muted-foreground">전체</p>
             </CardContent>
           </Card>
           <Card className="shadow-card">
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-primary">
-                {users.filter(u => u.role === 'admin').length}
-              </p>
-              <p className="text-xs text-muted-foreground">관리자</p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-card">
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-chart-2">
+            <CardContent className="p-3 text-center">
+              <p className="text-xl font-bold text-chart-2">
                 {users.filter(u => u.role === 'parent').length}
               </p>
               <p className="text-xs text-muted-foreground">학부모</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-card">
+            <CardContent className="p-3 text-center">
+              <p className="text-xl font-bold text-chart-3">
+                {users.filter(u => u.role === 'student').length}
+              </p>
+              <p className="text-xs text-muted-foreground">학생</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-card">
+            <CardContent className="p-3 text-center">
+              <p className="text-xl font-bold text-primary">
+                {users.filter(u => u.role === 'admin').length}
+              </p>
+              <p className="text-xs text-muted-foreground">학원</p>
             </CardContent>
           </Card>
         </div>
@@ -266,8 +274,9 @@ const SuperAdminUsersPage = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">전체</SelectItem>
-              <SelectItem value="admin">관리자</SelectItem>
               <SelectItem value="parent">학부모</SelectItem>
+              <SelectItem value="student">학생</SelectItem>
+              <SelectItem value="admin">학원</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -299,8 +308,8 @@ const SuperAdminUsersPage = () => {
                         <h4 className="font-medium text-foreground">
                           {user.profile?.user_name || "이름 없음"}
                         </h4>
-                        <Badge variant={user.role === 'admin' ? "default" : "secondary"}>
-                          {user.role === 'admin' ? '관리자' : '학부모'}
+                        <Badge variant={user.role === 'admin' ? "default" : user.role === 'student' ? "outline" : "secondary"}>
+                          {user.role === 'admin' ? '학원' : user.role === 'student' ? '학생' : '학부모'}
                         </Badge>
                         {user.is_super_admin && (
                           <Badge className="bg-chart-1 text-white">
@@ -339,7 +348,7 @@ const SuperAdminUsersPage = () => {
                   <div className="flex items-center gap-2 pt-2 border-t border-border">
                     <Select 
                       value={user.role} 
-                      onValueChange={(value) => handleRoleChange(user.user_id, value as 'parent' | 'admin')}
+                      onValueChange={(value) => handleRoleChange(user.user_id, value as 'parent' | 'admin' | 'student')}
                     >
                       <SelectTrigger className="flex-1">
                         <SelectValue />
@@ -351,10 +360,16 @@ const SuperAdminUsersPage = () => {
                             학부모
                           </div>
                         </SelectItem>
+                        <SelectItem value="student">
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4" />
+                            학생
+                          </div>
+                        </SelectItem>
                         <SelectItem value="admin">
                           <div className="flex items-center gap-2">
                             <UserX className="w-4 h-4" />
-                            관리자
+                            학원
                           </div>
                         </SelectItem>
                       </SelectContent>
@@ -387,8 +402,8 @@ const SuperAdminUsersPage = () => {
           {selectedUser && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant={selectedUser.role === 'admin' ? "default" : "secondary"}>
-                  {selectedUser.role === 'admin' ? '관리자' : '학부모'}
+                <Badge variant={selectedUser.role === 'admin' ? "default" : selectedUser.role === 'student' ? "outline" : "secondary"}>
+                  {selectedUser.role === 'admin' ? '학원' : selectedUser.role === 'student' ? '학생' : '학부모'}
                 </Badge>
                 {selectedUser.is_super_admin && (
                   <Badge className="bg-chart-1 text-white">
