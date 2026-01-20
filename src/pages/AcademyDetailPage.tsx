@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrCreateChatRoom } from "@/hooks/useChatRooms";
 import { useRoutePrefix } from "@/hooks/useRoutePrefix";
+import { useChildren } from "@/hooks/useChildren";
 import Logo from "@/components/Logo";
 import BottomNavigation from "@/components/BottomNavigation";
 import AcademyNewsTab from "@/components/AcademyNewsTab";
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -162,6 +164,7 @@ const AcademyDetailPage = () => {
   const navigate = useNavigate();
   const prefix = useRoutePrefix();
   const { getOrCreateChatRoom, loading: chatLoading } = useOrCreateChatRoom();
+  const { children, hasChildren } = useChildren();
   const [academy, setAcademy] = useState<Academy | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [classes, setClasses] = useState<ClassInfo[]>([]);
@@ -175,6 +178,7 @@ const AcademyDetailPage = () => {
     isOpen: boolean;
     classInfo: ClassInfo | null;
   }>({ isOpen: false, classInfo: null });
+  const [selectedChildForEnroll, setSelectedChildForEnroll] = useState<string | null>(null);
 
   // Removed old consultation form state - using new ConsultationReservationDialog
 
@@ -240,6 +244,7 @@ const AcademyDetailPage = () => {
         .insert({
           user_id: user.id,
           class_id: classInfo.id,
+          child_id: selectedChildForEnroll || null,
         });
 
       if (error) {
@@ -258,6 +263,15 @@ const AcademyDetailPage = () => {
     }
 
     setEnrollConfirmDialog({ isOpen: false, classInfo: null });
+    setSelectedChildForEnroll(null);
+  };
+
+  const handleOpenEnrollDialog = (classInfo: ClassInfo) => {
+    setEnrollConfirmDialog({ isOpen: true, classInfo });
+    // Pre-select first child if available
+    if (children.length > 0) {
+      setSelectedChildForEnroll(children[0].id);
+    }
   };
 
   const trackProfileView = async (academyId: string) => {
@@ -638,7 +652,7 @@ const AcademyDetailPage = () => {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     if (!isEnrolled) {
-                                      setEnrollConfirmDialog({ isOpen: true, classInfo: cls });
+                                      handleOpenEnrollDialog(cls);
                                     }
                                   }}
                                   disabled={isEnrolled}
@@ -811,7 +825,7 @@ const AcademyDetailPage = () => {
                       size="lg"
                       variant="outline"
                       onClick={() => {
-                        setEnrollConfirmDialog({ isOpen: true, classInfo: selectedClass });
+                        handleOpenEnrollDialog(selectedClass);
                         setSelectedClass(null);
                       }}
                     >
@@ -838,15 +852,47 @@ const AcademyDetailPage = () => {
         {/* Enroll Confirmation Dialog */}
         <AlertDialog
           open={enrollConfirmDialog.isOpen}
-          onOpenChange={(open) => !open && setEnrollConfirmDialog({ isOpen: false, classInfo: null })}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEnrollConfirmDialog({ isOpen: false, classInfo: null });
+              setSelectedChildForEnroll(null);
+            }
+          }}
         >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>MY CLASS 등록</AlertDialogTitle>
-              <AlertDialogDescription>
-                "{enrollConfirmDialog.classInfo?.name}"을(를) MY CLASS에 등록하시겠습니까?
-                <br />
-                <span className="text-primary font-medium">시간표에서 수업 일정을 확인할 수 있습니다.</span>
+              <AlertDialogDescription asChild>
+                <div className="space-y-4">
+                  <p>
+                    "{enrollConfirmDialog.classInfo?.name}"을(를) MY CLASS에 등록하시겠습니까?
+                    <br />
+                    <span className="text-primary font-medium">시간표에서 수업 일정을 확인할 수 있습니다.</span>
+                  </p>
+                  
+                  {hasChildren && (
+                    <div className="pt-2">
+                      <label className="text-sm font-medium text-foreground block mb-2">
+                        수강 자녀 선택
+                      </label>
+                      <Select 
+                        value={selectedChildForEnroll || ""} 
+                        onValueChange={setSelectedChildForEnroll}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="자녀를 선택하세요" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {children.map((child) => (
+                            <SelectItem key={child.id} value={child.id}>
+                              {child.name} {child.grade ? `(${child.grade})` : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
