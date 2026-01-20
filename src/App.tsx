@@ -56,6 +56,10 @@ import AcademyDashboardPage from "./pages/academy/AcademyDashboardPage";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import NotFound from "./pages/NotFound";
 
+// Student Pages
+import StudentHomePage from "./pages/student/StudentHomePage";
+import StudentMyPage from "./pages/student/StudentMyPage";
+
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -72,27 +76,54 @@ const App = () => {
             <Routes>
               <Route path="/" element={<RoleSelection />} />
               <Route path="/auth" element={<AuthPage />} />
+              
+              {/* Parent Routes (/p prefix) */}
+              <Route path="/p/home" element={<HomePage />} />
+              <Route path="/p/explore" element={<ExplorePage />} />
+              <Route path="/p/community" element={<CommunityPage />} />
+              <Route path="/p/my" element={<MyPage />} />
+              <Route path="/p/my/classes" element={<MyClassesPage />} />
+              <Route path="/p/my/bookmarks" element={<MyBookmarksPage />} />
+              <Route path="/p/my/reservations" element={<MyReservationsPage />} />
+              <Route path="/p/child-connection" element={<ChildConnectionPage />} />
+              <Route path="/p/settings" element={<SettingsPage />} />
+              <Route path="/p/customer-service" element={<CustomerServicePage />} />
+              <Route path="/p/chats" element={<ChatListPage />} />
+              <Route path="/p/chats/:id" element={<ChatRoomPage />} />
+              <Route path="/p/seminar/:id" element={<SeminarDetailPage />} />
+              <Route path="/p/academy/:id" element={<AcademyDetailPage />} />
+              <Route path="/p/learning-style-test" element={<LearningStyleTest />} />
+              <Route path="/p/learning-style-result" element={<LearningStyleResult />} />
+              <Route path="/p/preference-test" element={<PreferenceTest />} />
+              <Route path="/p/preference-result" element={<PreferenceResult />} />
+              <Route path="/p/timetable" element={<TimetablePage />} />
+              <Route path="/p/events" element={<EventsPage />} />
+              
+              {/* Student Routes (/s prefix) */}
+              <Route path="/s/home" element={<StudentHomePage />} />
+              <Route path="/s/explore" element={<ExplorePage />} />
+              <Route path="/s/community" element={<CommunityPage />} />
+              <Route path="/s/my" element={<StudentMyPage />} />
+              <Route path="/s/my/classes" element={<MyClassesPage />} />
+              <Route path="/s/my/bookmarks" element={<MyBookmarksPage />} />
+              <Route path="/s/my/reservations" element={<MyReservationsPage />} />
+              <Route path="/s/parent-connection" element={<ParentConnectionPage />} />
+              <Route path="/s/settings" element={<SettingsPage />} />
+              <Route path="/s/customer-service" element={<CustomerServicePage />} />
+              <Route path="/s/chats" element={<ChatListPage />} />
+              <Route path="/s/chats/:id" element={<ChatRoomPage />} />
+              <Route path="/s/seminar/:id" element={<SeminarDetailPage />} />
+              <Route path="/s/academy/:id" element={<AcademyDetailPage />} />
+              <Route path="/s/learning-style-test" element={<LearningStyleTest />} />
+              <Route path="/s/learning-style-result" element={<LearningStyleResult />} />
+              <Route path="/s/preference-test" element={<PreferenceTest />} />
+              <Route path="/s/preference-result" element={<PreferenceResult />} />
+              <Route path="/s/timetable" element={<TimetablePage />} />
+              <Route path="/s/events" element={<EventsPage />} />
+              
+              {/* Legacy routes - keep for backwards compatibility */}
               <Route path="/home" element={<HomePage />} />
-              <Route path="/explore" element={<ExplorePage />} />
-              <Route path="/community" element={<CommunityPage />} />
-              <Route path="/my" element={<MyPage />} />
-              <Route path="/my/classes" element={<MyClassesPage />} />
-              <Route path="/my/bookmarks" element={<MyBookmarksPage />} />
-              <Route path="/my/reservations" element={<MyReservationsPage />} />
-              <Route path="/child-connection" element={<ChildConnectionPage />} />
-              <Route path="/parent-connection" element={<ParentConnectionPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/customer-service" element={<CustomerServicePage />} />
-              <Route path="/chats" element={<ChatListPage />} />
-              <Route path="/chats/:id" element={<ChatRoomPage />} />
-              <Route path="/seminar/:id" element={<SeminarDetailPage />} />
-              <Route path="/academy/:id" element={<AcademyDetailPage />} />
-              <Route path="/learning-style-test" element={<LearningStyleTest />} />
-              <Route path="/learning-style-result" element={<LearningStyleResult />} />
-              <Route path="/preference-test" element={<PreferenceTest />} />
-              <Route path="/preference-result" element={<PreferenceResult />} />
-              <Route path="/timetable" element={<TimetablePage />} />
-              <Route path="/events" element={<EventsPage />} />
+
               {/* Protected Admin Routes */}
               <Route path="/academy/onboarding" element={<ProtectedAdminRoute><AcademyOnboardingPage /></ProtectedAdminRoute>} />
               <Route path="/academy/setup" element={<ProtectedAdminRoute><AcademySetupPage /></ProtectedAdminRoute>} />

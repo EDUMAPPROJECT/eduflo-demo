@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import BottomNavigation from "@/components/BottomNavigation";
+import StudentBottomNavigation from "@/components/StudentBottomNavigation";
 import Logo from "@/components/Logo";
 import NicknameSettingsDialog from "@/components/NicknameSettingsDialog";
 import { Button } from "@/components/ui/button";
@@ -19,11 +19,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-const MyPage = () => {
+const StudentMyPage = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [userRole, setUserRole] = useState<string>("parent");
   const [reservationCount, setReservationCount] = useState(0);
   const [seminarCount, setSeminarCount] = useState(0);
   const [isNicknameDialogOpen, setIsNicknameDialogOpen] = useState(false);
@@ -35,7 +34,6 @@ const MyPage = () => {
         if (session?.user) {
           setTimeout(() => {
             fetchProfile(session.user.id);
-            fetchRole(session.user.id);
             fetchCounts(session.user.id);
           }, 0);
         }
@@ -46,7 +44,6 @@ const MyPage = () => {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
-        fetchRole(session.user.id);
         fetchCounts(session.user.id);
       }
     });
@@ -63,18 +60,8 @@ const MyPage = () => {
     setProfile(data);
   };
 
-  const fetchRole = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (data) setUserRole(data.role);
-  };
-
   const fetchCounts = async (userId: string) => {
     try {
-      // Fetch reservation count
       const { count: resCount } = await supabase
         .from("consultation_reservations")
         .select("*", { count: "exact", head: true })
@@ -82,7 +69,6 @@ const MyPage = () => {
         .neq("status", "cancelled");
       setReservationCount(resCount || 0);
 
-      // Fetch seminar count
       const { count: semCount } = await supabase
         .from("seminar_applications")
         .select("*", { count: "exact", head: true })
@@ -133,9 +119,7 @@ const MyPage = () => {
                   </Button>
                 )}
               </div>
-              <p className="text-sm text-primary-foreground/80">
-                {userRole === "parent" ? "학부모 회원" : userRole === "student" ? "학생 회원" : "학원 원장님"}
-              </p>
+              <p className="text-sm text-primary-foreground/80">학생 회원</p>
             </div>
             {!user ? (
               <Button 
@@ -156,7 +140,7 @@ const MyPage = () => {
         {/* Quick Stats Card */}
         <div 
           className="bg-card rounded-2xl p-4 shadow-card mb-6 cursor-pointer hover:shadow-soft transition-all"
-          onClick={() => navigate("/p/my/reservations")}
+          onClick={() => navigate("/s/my/reservations")}
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-medium text-foreground">내 예약</span>
@@ -181,12 +165,12 @@ const MyPage = () => {
               <MenuItemButton 
                 icon={BookOpen} 
                 label="MY CLASS" 
-                onClick={() => navigate("/p/my/classes")} 
+                onClick={() => navigate("/s/my/classes")} 
               />
               <MenuItemButton 
                 icon={Heart} 
                 label="찜한 학원" 
-                onClick={() => navigate("/p/my/bookmarks")} 
+                onClick={() => navigate("/s/my/bookmarks")} 
               />
             </>
           )}
@@ -196,13 +180,11 @@ const MyPage = () => {
         <div className="bg-card rounded-2xl shadow-card overflow-hidden mb-6">
           {user && (
             <>
-              {userRole === "parent" && (
-                <MenuItemButton 
-                  icon={Users} 
-                  label="자녀 연결" 
-                  onClick={() => navigate("/p/child-connection")} 
-                />
-              )}
+              <MenuItemButton 
+                icon={Users} 
+                label="부모님 연결" 
+                onClick={() => navigate("/s/parent-connection")} 
+              />
               <MenuItemButton 
                 icon={FileText} 
                 label="성적 등록" 
@@ -211,7 +193,7 @@ const MyPage = () => {
               <MenuItemButton 
                 icon={Sparkles} 
                 label="성향 테스트" 
-                onClick={() => navigate("/p/preference-test")} 
+                onClick={() => navigate("/s/preference-test")} 
               />
             </>
           )}
@@ -219,8 +201,8 @@ const MyPage = () => {
 
         {/* Menu List */}
         <div className="bg-card rounded-2xl shadow-card overflow-hidden">
-          <MenuItemButton icon={Settings} label="설정" onClick={() => navigate("/p/settings")} />
-          <MenuItemButton icon={HelpCircle} label="고객센터" onClick={() => navigate("/p/customer-service")} />
+          <MenuItemButton icon={Settings} label="설정" onClick={() => navigate("/s/settings")} />
+          <MenuItemButton icon={HelpCircle} label="고객센터" onClick={() => navigate("/s/customer-service")} />
           {user && (
             <MenuItemButton 
               icon={LogOut} 
@@ -242,7 +224,7 @@ const MyPage = () => {
         )}
       </main>
 
-      <BottomNavigation />
+      <StudentBottomNavigation />
     </div>
   );
 };
@@ -269,4 +251,4 @@ const MenuItemButton = ({ icon: Icon, label, variant = "default", onClick }: Men
   </button>
 );
 
-export default MyPage;
+export default StudentMyPage;
