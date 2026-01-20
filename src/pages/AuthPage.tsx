@@ -36,26 +36,26 @@ const AuthPage = () => {
       if (error) {
         logError('role-fetch', error);
         // Default to parent home if role check fails
-        navigate("/home");
+        navigate("/p/home");
         return;
       }
       
       // If no role found, default to parent
       if (!roleData) {
-        navigate("/home");
+        navigate("/p/home");
         return;
       }
       
       if (roleData.role === "admin") {
         navigate("/admin/home");
       } else if (roleData.role === "student") {
-        navigate("/home");
+        navigate("/s/home");
       } else {
-        navigate("/home");
+        navigate("/p/home");
       }
     } catch (error) {
       logError('navigate-by-role', error);
-      navigate("/home");
+      navigate("/p/home");
     }
   };
 
@@ -171,7 +171,7 @@ const AuthPage = () => {
     if (session?.user) {
       await navigateByDatabaseRole(session.user.id);
     } else {
-      navigate("/home");
+      navigate("/p/home");
     }
   };
 

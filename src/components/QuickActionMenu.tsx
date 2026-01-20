@@ -1,15 +1,21 @@
 import { useNavigate } from "react-router-dom";
 import { Calendar, Bell, Clock, PartyPopper } from "lucide-react";
 
-const actions = [
-  { name: "내 예약", icon: Calendar, path: "/my/reservations" },
-  { name: "공지사항", icon: Bell, path: "/customer-service" },
-  { name: "시간표", icon: Clock, path: "/timetable" },
-  { name: "이벤트", icon: PartyPopper, path: "/events" },
-];
+interface QuickActionMenuProps {
+  isStudent?: boolean;
+}
 
-const QuickActionMenu = () => {
+const QuickActionMenu = ({ isStudent = false }: QuickActionMenuProps) => {
   const navigate = useNavigate();
+
+  const prefix = isStudent ? "/s" : "/p";
+  
+  const actions = [
+    { name: "내 예약", icon: Calendar, path: `${prefix}/my/reservations` },
+    { name: "공지사항", icon: Bell, path: `${prefix}/customer-service` },
+    { name: "시간표", icon: Clock, path: `${prefix}/timetable` },
+    { name: "이벤트", icon: PartyPopper, path: `${prefix}/events` },
+  ];
 
   return (
     <div className="grid grid-cols-4 gap-2">

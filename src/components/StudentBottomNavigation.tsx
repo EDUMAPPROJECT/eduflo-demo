@@ -10,17 +10,17 @@ interface NavItem {
   showBadge?: boolean;
 }
 
-const BottomNavigation = () => {
+const StudentBottomNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const hasUnread = useUnreadMessages(false);
 
   const navItems: NavItem[] = [
-    { icon: Home, label: "홈", path: "/p/home" },
-    { icon: MessageCircle, label: "채팅", path: "/p/chats", showBadge: true },
-    { icon: Search, label: "탐색", path: "/p/explore" },
-    { icon: Newspaper, label: "커뮤니티", path: "/p/community" },
-    { icon: User, label: "마이", path: "/p/my" },
+    { icon: Home, label: "홈", path: "/s/home" },
+    { icon: MessageCircle, label: "채팅", path: "/s/chats", showBadge: true },
+    { icon: Search, label: "탐색", path: "/s/explore" },
+    { icon: Newspaper, label: "커뮤니티", path: "/s/community" },
+    { icon: User, label: "마이", path: "/s/my" },
   ];
 
   return (
@@ -58,4 +58,4 @@ const BottomNavigation = () => {
   );
 };
 
-export default BottomNavigation;
+export default StudentBottomNavigation;
