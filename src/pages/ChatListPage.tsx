@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useChatRooms } from "@/hooks/useChatRooms";
+import { useRoutePrefix } from "@/hooks/useRoutePrefix";
 import Logo from "@/components/Logo";
 import BottomNavigation from "@/components/BottomNavigation";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,6 +23,7 @@ const formatTime = (date: Date | null) => {
 
 const ChatListPage = () => {
   const navigate = useNavigate();
+  const prefix = useRoutePrefix();
   const { chatRooms, loading, userId } = useChatRooms();
 
   if (loading) {
@@ -91,7 +93,7 @@ const ChatListPage = () => {
               <Card
                 key={room.id}
                 className="shadow-card cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => navigate(`/chats/${room.id}`)}
+                onClick={() => navigate(`${prefix}/chats/${room.id}`)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">

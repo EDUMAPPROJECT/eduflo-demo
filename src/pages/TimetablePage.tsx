@@ -70,11 +70,21 @@ const TimetablePage = () => {
         return;
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("manual_schedules")
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: true });
+
+      // Filter by selected child if available
+      if (hasChildren && selectedChildId) {
+        query = query.eq("child_id", selectedChildId);
+      } else if (hasChildren && !selectedChildId) {
+        // If has children but none selected, show schedules with null child_id (user's own)
+        query = query.is("child_id", null);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching manual schedules:", error);
@@ -87,7 +97,7 @@ const TimetablePage = () => {
     if (!enrollmentsLoading) {
       fetchManualSchedules();
     }
-  }, [userId, enrollmentsLoading]);
+  }, [userId, enrollmentsLoading, selectedChildId, hasChildren]);
 
   // Parse all enrolled class schedules into blocks
   const scheduleBlocks: ScheduleBlock[] = [];
@@ -169,6 +179,7 @@ const TimetablePage = () => {
         start_time: newStartTime,
         end_time: newEndTime,
         color_index: enrollments.length + manualSchedules.length,
+        child_id: hasChildren && selectedChildId ? selectedChildId : null,
       })
       .select()
       .single();
