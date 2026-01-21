@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Calendar, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { parseScheduleMultiple, CLASS_COLORS } from "@/hooks/useClassEnrollments";
+import { useChildren } from "@/hooks/useChildren";
+import ChildSelector from "@/components/ChildSelector";
 
 interface TodayClass {
   id: string;
@@ -64,6 +66,7 @@ const getDuration = (
 const TodayScheduleSection = () => {
   const [todayClasses, setTodayClasses] = useState<TodayClass[]>([]);
   const [loading, setLoading] = useState(true);
+  const { selectedChildId, hasChildren } = useChildren();
 
   useEffect(() => {
     const fetchTodaySchedule = async () => {
@@ -74,7 +77,7 @@ const TodayScheduleSection = () => {
           return;
         }
 
-        const { data, error } = await supabase
+        let query = supabase
           .from("class_enrollments")
           .select(`
             *,
@@ -90,6 +93,13 @@ const TodayScheduleSection = () => {
           `)
           .eq("user_id", session.user.id)
           .order("created_at", { ascending: true });
+
+        // Filter by selected child if available
+        if (hasChildren && selectedChildId) {
+          query = query.eq("child_id", selectedChildId);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
@@ -136,7 +146,7 @@ const TodayScheduleSection = () => {
     };
 
     fetchTodaySchedule();
-  }, []);
+  }, [selectedChildId, hasChildren]);
 
   if (loading) {
     return (
@@ -154,9 +164,12 @@ const TodayScheduleSection = () => {
 
   return (
     <div className="bg-card rounded-xl p-4 border border-border">
-      <div className="flex items-center gap-2 mb-4">
-        <Calendar className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-semibold">오늘의 일정</h3>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold">오늘의 일정</h3>
+        </div>
+        {hasChildren && <ChildSelector showAllOption={false} />}
       </div>
 
       {todayClasses.length === 0 ? (
