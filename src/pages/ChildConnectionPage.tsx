@@ -477,7 +477,7 @@ const ChildConnectionPage = () => {
               코드는 24시간 후 만료됩니다.
             </p>
           </div>
-          <DialogFooter className="flex-col gap-2 sm:flex-col">
+          <DialogFooter className="flex flex-col gap-2 sm:flex-col sm:justify-center">
             <Button 
               className="w-full"
               onClick={() => currentCode && handleCopyCode(currentCode)}
