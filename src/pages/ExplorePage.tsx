@@ -7,6 +7,7 @@ import BottomNavigation from "@/components/BottomNavigation";
 import Logo from "@/components/Logo";
 import AdminHeader from "@/components/AdminHeader";
 import GlobalRegionSelector from "@/components/GlobalRegionSelector";
+import AcademyMap from "@/components/AcademyMap";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -259,14 +260,7 @@ const ExplorePage = () => {
       </div>
 
       {/* Map Area (Academies only) */}
-      {activeTab === "academies" && (
-        <div className="h-36 bg-secondary/50 flex items-center justify-center border-b border-border">
-          <div className="text-center">
-            <MapPin className="w-8 h-8 text-primary mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">지도에서 학원 찾기</p>
-          </div>
-        </div>
-      )}
+      {activeTab === "academies" && <AcademyMap />}
 
       {/* Filter Tags */}
       <div className="max-w-lg mx-auto px-4 py-3 border-b border-border bg-card">
