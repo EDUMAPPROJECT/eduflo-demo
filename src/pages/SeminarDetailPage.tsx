@@ -310,12 +310,12 @@ const SeminarDetailPage = () => {
       </header>
 
       {/* Hero Image */}
-      <div className="relative aspect-[16/9] bg-gradient-to-br from-primary/20 via-accent/10 to-secondary/30 flex items-center justify-center overflow-hidden">
+      <div className="relative bg-gradient-to-br from-primary/20 via-accent/10 to-secondary/30 flex items-center justify-center">
         {seminar.image_url ? (
           <img
             src={seminar.image_url}
             alt={seminar.title}
-            className="w-full h-full object-cover"
+            className="w-full h-auto max-h-[70vh] object-contain"
           />
         ) : (
           <div className="text-center p-6">

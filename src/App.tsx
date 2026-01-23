@@ -62,6 +62,7 @@ import StudentMyPage from "./pages/student/StudentMyPage";
 
 // Shared Pages
 import AnnouncementsPage from "./pages/AnnouncementsPage";
+import MyProfilePage from "./pages/MyProfilePage";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +86,7 @@ const App = () => {
               <Route path="/p/explore" element={<ExplorePage />} />
               <Route path="/p/community" element={<CommunityPage />} />
               <Route path="/p/my" element={<MyPage />} />
+              <Route path="/p/my/profile" element={<MyProfilePage />} />
               <Route path="/p/my/classes" element={<MyClassesPage />} />
               <Route path="/p/my/bookmarks" element={<MyBookmarksPage />} />
               <Route path="/p/my/reservations" element={<MyReservationsPage />} />
@@ -108,6 +110,7 @@ const App = () => {
               <Route path="/s/explore" element={<ExplorePage />} />
               <Route path="/s/community" element={<CommunityPage />} />
               <Route path="/s/my" element={<StudentMyPage />} />
+              <Route path="/s/my/profile" element={<MyProfilePage />} />
               <Route path="/s/my/classes" element={<MyClassesPage />} />
               <Route path="/s/my/bookmarks" element={<MyBookmarksPage />} />
               <Route path="/s/my/reservations" element={<MyReservationsPage />} />
