@@ -15,7 +15,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Users, Copy, RefreshCw, Crown, Shield, Trash2, Settings, Clock, Check, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Users, Copy, RefreshCw, Crown, Shield, Trash2, Settings, Clock, Check, X, GraduationCap, UserCog } from "lucide-react";
 import { logError } from "@/lib/errorLogger";
 
 interface AcademyMemberManagementProps {
@@ -35,6 +36,13 @@ interface MemberWithProfile {
   } | null;
 }
 
+const ROLE_OPTIONS = [
+  { value: 'owner', label: '원장', icon: Crown },
+  { value: 'vice_owner', label: '부원장', icon: Shield },
+  { value: 'teacher', label: '강사', icon: GraduationCap },
+  { value: 'admin', label: '관리자', icon: UserCog },
+];
+
 const AcademyMemberManagement = ({ academyId }: AcademyMemberManagementProps) => {
   const { isOwner, generateJoinCode, primaryAcademy, refetch, memberships } = useAcademyMembership();
   const [members, setMembers] = useState<MemberWithProfile[]>([]);
@@ -53,6 +61,13 @@ const AcademyMemberManagement = ({ academyId }: AcademyMemberManagementProps) =>
   const isApprovedMember = memberships.some(
     m => m.membership.academy_id === academyId && m.membership.status === 'approved'
   );
+  
+  // Check if user has manage_members permission
+  const currentMembership = memberships.find(
+    m => m.membership.academy_id === academyId && m.membership.status === 'approved'
+  );
+  const hasManageMembersPermission = isAcademyOwner || 
+    (currentMembership?.membership.permissions as Record<string, boolean>)?.manage_members === true;
 
   useEffect(() => {
     fetchMembers();
@@ -227,6 +242,34 @@ const AcademyMemberManagement = ({ academyId }: AcademyMemberManagementProps) =>
     }
   };
 
+  const handleRoleChange = async (memberId: string, newRole: string) => {
+    try {
+      const { error } = await supabase
+        .from('academy_members')
+        .update({ role: newRole })
+        .eq('id', memberId);
+
+      if (error) throw error;
+
+      toast.success("등급이 변경되었습니다");
+      fetchMembers();
+      refetch();
+    } catch (error) {
+      logError('Change Role', error);
+      toast.error("등급 변경에 실패했습니다");
+    }
+  };
+
+  const getRoleLabel = (role: string) => {
+    const option = ROLE_OPTIONS.find(r => r.value === role);
+    return option?.label || role;
+  };
+
+  const getRoleIcon = (role: string) => {
+    const option = ROLE_OPTIONS.find(r => r.value === role);
+    return option?.icon || Shield;
+  };
+
   // If not an approved member, don't show anything
   if (!isApprovedMember) {
     return null;
@@ -342,54 +385,75 @@ const AcademyMemberManagement = ({ academyId }: AcademyMemberManagementProps) =>
             </div>
           ) : (
             <div className="space-y-2">
-              {members.filter(m => m.status === 'approved').map((member) => (
-                <div
-                  key={member.id}
-                  className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      {member.role === 'owner' ? (
-                        <Crown className="w-5 h-5 text-primary" />
+              {members.filter(m => m.status === 'approved').map((member) => {
+                const RoleIcon = getRoleIcon(member.role);
+                return (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <RoleIcon className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">
+                          {member.profile?.user_name || '이름 없음'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {member.profile?.email}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {/* Role selector - available to those with manage_members permission */}
+                      {hasManageMembersPermission ? (
+                        <Select
+                          value={member.role}
+                          onValueChange={(value) => handleRoleChange(member.id, value)}
+                        >
+                          <SelectTrigger className="w-24 h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ROLE_OPTIONS.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                <span className="flex items-center gap-2">
+                                  <option.icon className="w-3 h-3" />
+                                  {option.label}
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       ) : (
-                        <Shield className="w-5 h-5 text-muted-foreground" />
+                        <Badge variant={member.role === 'owner' ? 'default' : 'secondary'}>
+                          {getRoleLabel(member.role)}
+                        </Badge>
+                      )}
+                      {/* Only show management buttons to owner */}
+                      {isAcademyOwner && member.role !== 'owner' && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openPermissionDialog(member)}
+                          >
+                            <Settings className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeMember(member.id)}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </>
                       )}
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">
-                        {member.profile?.user_name || '이름 없음'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {member.profile?.email}
-                      </p>
-                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={member.role === 'owner' ? 'default' : 'secondary'}>
-                      {member.role === 'owner' ? '원장' : '관리자'}
-                    </Badge>
-                    {/* Only show management buttons to owner */}
-                    {isAcademyOwner && member.role !== 'owner' && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openPermissionDialog(member)}
-                        >
-                          <Settings className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeMember(member.id)}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

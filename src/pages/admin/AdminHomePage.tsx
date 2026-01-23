@@ -23,14 +23,34 @@ const AdminHomePage = () => {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [academyId, setAcademyId] = useState<string | null>(null);
   const [hasEditProfilePermission, setHasEditProfilePermission] = useState(false);
   const [showPermissionDialog, setShowPermissionDialog] = useState(false);
 
+  const roleLabels: Record<string, string> = {
+    owner: "원장",
+    vice_owner: "부원장",
+    teacher: "강사",
+    admin: "관리자"
+  };
+
   useEffect(() => {
     const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
+      if (session?.user) {
+        setUser(session.user);
+        
+        // Fetch user name from profiles
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("user_name")
+          .eq("id", session.user.id)
+          .maybeSingle();
+        
+        setUserName(profile?.user_name || null);
+      }
     };
     getUser();
   }, []);
@@ -57,6 +77,7 @@ const AdminHomePage = () => {
         
         if (memberData) {
           academy = { id: memberData.academy_id };
+          setUserRole(memberData.role);
           // Check edit permission: owner has all permissions, or check edit_profile permission
           const permissions = memberData.permissions as Record<string, boolean> | null;
           canEditProfile = memberData.role === 'owner' || (permissions?.edit_profile === true);
@@ -69,6 +90,7 @@ const AdminHomePage = () => {
             .maybeSingle();
           academy = ownerData;
           if (ownerData) {
+            setUserRole('owner');
             canEditProfile = true; // Owner always has edit permission
           }
         }
@@ -197,7 +219,7 @@ const AdminHomePage = () => {
         {/* Welcome Banner */}
         <div className="gradient-primary rounded-2xl p-5 mb-6 shadow-soft">
           <h2 className="text-primary-foreground font-semibold text-lg mb-1">
-            안녕하세요, 원장님 👋
+            안녕하세요, {userName || "관리자"} {userRole ? roleLabels[userRole] || "님" : "님"} 👋
           </h2>
           <p className="text-primary-foreground/80 text-sm">
             오늘도 에듀맵과 함께 학원을 운영해보세요
