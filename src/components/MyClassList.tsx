@@ -206,15 +206,9 @@ const MyClassList = () => {
                         <h4 className="font-medium text-foreground text-sm line-clamp-1">
                           {enrollment.class?.name || "강좌"}
                         </h4>
-                        {enrollment.class?.is_recruiting ? (
-                          <Badge className="bg-green-500 text-white text-[10px] px-1.5 py-0">
-                            모집중
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                            마감
-                          </Badge>
-                        )}
+                        <Badge className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0">
+                          등록됨
+                        </Badge>
                       </div>
 
                       <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">

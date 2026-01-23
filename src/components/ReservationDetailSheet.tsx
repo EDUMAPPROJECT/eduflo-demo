@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, MapPin, GraduationCap, User, MessageSquare } from "lucide-react";
+import { Calendar, Clock, MapPin, GraduationCap, User, MessageSquare, Map } from "lucide-react";
 
 interface ReservationDetailSheetProps {
   open: boolean;
@@ -151,14 +151,28 @@ const ReservationDetailSheet = ({
             )}
 
             {type === "seminar" && data.seminarLocation && (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-accent" />
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-accent" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">장소</p>
+                    <p className="font-medium">{data.seminarLocation}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">장소</p>
-                  <p className="font-medium">{data.seminarLocation}</p>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2"
+                  onClick={() => {
+                    const encodedLocation = encodeURIComponent(data.seminarLocation || "");
+                    window.open(`https://map.naver.com/v5/search/${encodedLocation}`, "_blank");
+                  }}
+                >
+                  <Map className="w-4 h-4" />
+                  지도로 위치 보기
+                </Button>
               </div>
             )}
           </div>
