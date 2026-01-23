@@ -12,7 +12,7 @@ const QuickActionMenu = ({ isStudent = false }: QuickActionMenuProps) => {
   
   const actions = [
     { name: "내 예약", icon: Calendar, path: `${prefix}/my/reservations` },
-    { name: "공지사항", icon: Bell, path: `${prefix}/customer-service` },
+    { name: "공지사항", icon: Bell, path: `${prefix}/announcements` },
     { name: "시간표", icon: Clock, path: `${prefix}/timetable` },
     { name: "이벤트", icon: PartyPopper, path: `${prefix}/events` },
   ];
