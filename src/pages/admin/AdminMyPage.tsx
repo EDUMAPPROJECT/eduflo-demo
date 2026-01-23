@@ -6,7 +6,7 @@ import Logo from "@/components/Logo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, LogOut, Settings, Pencil, Building2, Users, FileCheck, Loader2, Lock, Clock } from "lucide-react";
+import { User, LogOut, Pencil, Building2, Users, FileCheck, Loader2, Lock, Clock } from "lucide-react";
 import { toast } from "sonner";
 import NicknameSettingsDialog from "@/components/NicknameSettingsDialog";
 import { useAcademyMembership } from "@/hooks/useAcademyMembership";
@@ -251,26 +251,7 @@ const AdminMyPage = () => {
 
         {/* Menu Items */}
         <div className="space-y-3">
-          {hasApprovedAcademy && (
-            <Card 
-              className="shadow-card border-border cursor-pointer hover:shadow-soft transition-all duration-200"
-              onClick={() => navigate("/admin/profile")}
-            >
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-                  <Settings className="w-5 h-5 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-foreground">학원 프로필 관리</h4>
-                  <p className="text-sm text-muted-foreground">
-                    학원 정보 및 설정을 관리합니다
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card 
+          <Card
             className="shadow-card border-destructive/20 cursor-pointer hover:shadow-soft transition-all duration-200"
             onClick={handleLogout}
           >
