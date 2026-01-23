@@ -60,6 +60,9 @@ import NotFound from "./pages/NotFound";
 import StudentHomePage from "./pages/student/StudentHomePage";
 import StudentMyPage from "./pages/student/StudentMyPage";
 
+// Shared Pages
+import AnnouncementsPage from "./pages/AnnouncementsPage";
+
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -98,6 +101,7 @@ const App = () => {
               <Route path="/p/preference-result" element={<PreferenceResult />} />
               <Route path="/p/timetable" element={<TimetablePage />} />
               <Route path="/p/events" element={<EventsPage />} />
+              <Route path="/p/announcements" element={<AnnouncementsPage />} />
               
               {/* Student Routes (/s prefix) */}
               <Route path="/s/home" element={<StudentHomePage />} />
@@ -120,6 +124,7 @@ const App = () => {
               <Route path="/s/preference-result" element={<PreferenceResult />} />
               <Route path="/s/timetable" element={<TimetablePage />} />
               <Route path="/s/events" element={<EventsPage />} />
+              <Route path="/s/announcements" element={<AnnouncementsPage />} />
               
               {/* Legacy routes - keep for backwards compatibility */}
               <Route path="/home" element={<HomePage />} />
