@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Heart, Share2, ChevronRight, ChevronLeft, Bell, Calendar, PartyPopper, X, Trash2 } from "lucide-react";
+import { Heart, Share2, ChevronRight, ChevronLeft, Bell, Calendar, PartyPopper, X, Trash2, GraduationCap, Megaphone } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ import { toast } from "sonner";
 interface FeedPost {
   id: string;
   academy_id: string;
-  type: 'notice' | 'seminar' | 'event';
+  type: 'notice' | 'seminar' | 'event' | 'admission';
   title: string;
   body: string | null;
   image_url: string | null;
@@ -50,7 +50,8 @@ interface FeedPostDetailSheetProps {
 }
 
 const typeConfig = {
-  notice: { label: '공지', icon: Bell, color: 'bg-blue-500 text-white' },
+  notice: { label: '학원 소식', icon: Megaphone, color: 'bg-blue-500 text-white' },
+  admission: { label: '입시 정보', icon: GraduationCap, color: 'bg-green-600 text-white' },
   seminar: { label: '설명회', icon: Calendar, color: 'bg-orange-500 text-white' },
   event: { label: '이벤트', icon: PartyPopper, color: 'bg-purple-500 text-white' },
 };

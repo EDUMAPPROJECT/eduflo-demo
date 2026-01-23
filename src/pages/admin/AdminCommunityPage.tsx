@@ -21,13 +21,15 @@ import {
   Search,
   Plus,
   AlertTriangle,
-  X
+  X,
+  GraduationCap,
+  Megaphone
 } from "lucide-react";
 
 interface FeedPost {
   id: string;
   academy_id: string;
-  type: 'notice' | 'seminar' | 'event';
+  type: 'notice' | 'seminar' | 'event' | 'admission';
   title: string;
   body: string | null;
   image_url: string | null;
@@ -45,7 +47,8 @@ interface FeedPost {
 
 const filterOptions = [
   { id: 'all', label: '전체', icon: null },
-  { id: 'notice', label: '공지', icon: Bell },
+  { id: 'notice', label: '학원 소식', icon: Megaphone },
+  { id: 'admission', label: '입시 정보', icon: GraduationCap },
   { id: 'seminar', label: '설명회', icon: Calendar },
   { id: 'event', label: '이벤트', icon: PartyPopper },
 ];

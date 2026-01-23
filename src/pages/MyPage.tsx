@@ -75,20 +75,32 @@ const MyPage = () => {
 
   const fetchCounts = async (userId: string) => {
     try {
-      // Fetch reservation count
+      const now = new Date().toISOString();
+      
+      // Fetch upcoming reservation count (exclude past and cancelled)
       const { count: resCount } = await supabase
         .from("consultation_reservations")
         .select("*", { count: "exact", head: true })
         .eq("parent_id", userId)
-        .neq("status", "cancelled");
+        .neq("status", "cancelled")
+        .gte("date", now.split('T')[0]);
       setReservationCount(resCount || 0);
 
-      // Fetch seminar count
-      const { count: semCount } = await supabase
+      // Fetch upcoming seminar count (only future seminars)
+      const { data: applications } = await supabase
         .from("seminar_applications")
-        .select("*", { count: "exact", head: true })
+        .select(`
+          id,
+          seminar:seminars!inner(date)
+        `)
         .eq("user_id", userId);
-      setSeminarCount(semCount || 0);
+      
+      const upcomingSeminarCount = (applications || []).filter((app: any) => {
+        const seminarDate = new Date(app.seminar?.date);
+        return seminarDate >= new Date();
+      }).length;
+      
+      setSeminarCount(upcomingSeminarCount);
     } catch (error) {
       console.error("Error fetching counts:", error);
     }
