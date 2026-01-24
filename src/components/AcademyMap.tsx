@@ -31,6 +31,7 @@ const AcademyMap = () => {
         new window.naver.maps.Map(mapRef.current, {
           center: new window.naver.maps.LatLng(37.3200, 127.1100), // 동탄4동 중심 좌표
           zoom: 14,
+          logoControl: false, // 네이버 로고 숨기기
         });
 
         setIsLoading(false);
@@ -68,7 +69,7 @@ const AcademyMap = () => {
   }
 
   return (
-    <div className="max-w-lg mx-auto border-b border-border">
+    <div className="max-w-lg mx-auto border-b border-border relative z-0">
       <div className="relative">
         {isLoading && (
           <div className="absolute inset-0 bg-secondary/50 flex items-center justify-center z-10">
@@ -80,7 +81,7 @@ const AcademyMap = () => {
         )}
         <div
           ref={mapRef}
-          className="w-full h-64"
+          className="w-full h-64 relative z-0"
           style={{ minHeight: "256px" }}
         />
       </div>

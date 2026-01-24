@@ -33,7 +33,7 @@ const GlobalRegionSelector = () => {
           <ChevronDown className="w-3 h-3 text-muted-foreground" />
         </Button>
       </DrawerTrigger>
-      <DrawerContent>
+      <DrawerContent className="max-w-lg mx-auto">
         <DrawerHeader>
           <DrawerTitle className="text-center">지역 선택</DrawerTitle>
         </DrawerHeader>
