@@ -27,7 +27,7 @@ interface RegionContextType {
 
 const RegionContext = createContext<RegionContextType | undefined>(undefined);
 
-const STORAGE_KEY = "edumap_selected_region";
+const STORAGE_KEY = "eduflo_selected_region";
 
 export const RegionProvider = ({ children }: { children: ReactNode }) => {
   const [selectedRegion, setSelectedRegionState] = useState<string>(() => {

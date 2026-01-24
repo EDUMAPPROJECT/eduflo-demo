@@ -53,7 +53,7 @@ const filterOptions = [
   { id: 'event', label: '이벤트', icon: PartyPopper },
 ];
 
-const MIGRATION_NOTICE_KEY = 'edumap_migration_notice_dismissed';
+const MIGRATION_NOTICE_KEY = 'eduflo_migration_notice_dismissed';
 
 const AdminCommunityPage = () => {
   const navigate = useNavigate();
