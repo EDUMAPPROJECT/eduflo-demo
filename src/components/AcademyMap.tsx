@@ -29,8 +29,8 @@ const AcademyMap = () => {
         }
 
         new window.naver.maps.Map(mapRef.current, {
-          center: new window.naver.maps.LatLng(37.5665, 126.9780),
-          zoom: 13,
+          center: new window.naver.maps.LatLng(37.3200, 127.1100), // 동탄4동 중심 좌표
+          zoom: 14,
         });
 
         setIsLoading(false);
