@@ -93,6 +93,7 @@ export type Database = {
         Row: {
           academy_id: string
           created_at: string
+          grade: string | null
           id: string
           permissions: Json
           role: string
@@ -103,6 +104,7 @@ export type Database = {
         Insert: {
           academy_id: string
           created_at?: string
+          grade?: string | null
           id?: string
           permissions?: Json
           role?: string
@@ -113,6 +115,7 @@ export type Database = {
         Update: {
           academy_id?: string
           created_at?: string
+          grade?: string | null
           id?: string
           permissions?: Json
           role?: string

@@ -27,6 +27,7 @@ interface MemberWithProfile {
   id: string;
   user_id: string;
   role: string;
+  grade: string;
   status: string;
   permissions: AcademyMember['permissions'];
   created_at: string;
@@ -36,8 +37,7 @@ interface MemberWithProfile {
   } | null;
 }
 
-const ROLE_OPTIONS = [
-  { value: 'owner', label: '원장', icon: Crown },
+const GRADE_OPTIONS = [
   { value: 'vice_owner', label: '부원장', icon: Shield },
   { value: 'teacher', label: '강사', icon: GraduationCap },
   { value: 'admin', label: '관리자', icon: UserCog },
@@ -106,6 +106,7 @@ const AcademyMemberManagement = ({ academyId }: AcademyMemberManagementProps) =>
 
         const membersWithProfiles = memberData.map(member => ({
           ...member,
+          grade: (member as any).grade || 'admin',
           permissions: member.permissions as AcademyMember['permissions'],
           profile: profiles?.find(p => p.id === member.user_id) || null,
         }));
@@ -242,11 +243,11 @@ const AcademyMemberManagement = ({ academyId }: AcademyMemberManagementProps) =>
     }
   };
 
-  const handleRoleChange = async (memberId: string, newRole: string) => {
+  const handleGradeChange = async (memberId: string, newGrade: string) => {
     try {
       const { error } = await supabase
         .from('academy_members')
-        .update({ role: newRole })
+        .update({ grade: newGrade })
         .eq('id', memberId);
 
       if (error) throw error;
@@ -255,19 +256,21 @@ const AcademyMemberManagement = ({ academyId }: AcademyMemberManagementProps) =>
       fetchMembers();
       refetch();
     } catch (error) {
-      logError('Change Role', error);
+      logError('Change Grade', error);
       toast.error("등급 변경에 실패했습니다");
     }
   };
 
-  const getRoleLabel = (role: string) => {
-    const option = ROLE_OPTIONS.find(r => r.value === role);
-    return option?.label || role;
+  const getGradeLabel = (role: string, grade?: string) => {
+    if (role === 'owner') return '원장';
+    const option = GRADE_OPTIONS.find(r => r.value === grade);
+    return option?.label || '관리자';
   };
 
-  const getRoleIcon = (role: string) => {
-    const option = ROLE_OPTIONS.find(r => r.value === role);
-    return option?.icon || Shield;
+  const getGradeIcon = (role: string, grade?: string) => {
+    if (role === 'owner') return Crown;
+    const option = GRADE_OPTIONS.find(r => r.value === grade);
+    return option?.icon || UserCog;
   };
 
   // If not an approved member, don't show anything
@@ -280,10 +283,10 @@ const AcademyMemberManagement = ({ academyId }: AcademyMemberManagementProps) =>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <Users className="w-4 h-4 text-primary" />
-          {isAcademyOwner ? '관리자 관리' : '관리자 목록'}
+          {isAcademyOwner ? '멤버 관리' : '멤버 목록'}
         </CardTitle>
         <CardDescription>
-          {isAcademyOwner ? '학원 관리자를 초대하고 권한을 설정하세요' : '학원에 등록된 관리자 목록입니다'}
+          {isAcademyOwner ? '학원 멤버를 초대하고 권한을 설정하세요' : '학원에 등록된 멤버 목록입니다'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -386,7 +389,8 @@ const AcademyMemberManagement = ({ academyId }: AcademyMemberManagementProps) =>
           ) : (
             <div className="space-y-2">
               {members.filter(m => m.status === 'approved').map((member) => {
-                const RoleIcon = getRoleIcon(member.role);
+                const GradeIcon = getGradeIcon(member.role, member.grade);
+                const isOwnerMember = member.role === 'owner';
                 return (
                   <div
                     key={member.id}
@@ -394,7 +398,7 @@ const AcademyMemberManagement = ({ academyId }: AcademyMemberManagementProps) =>
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <RoleIcon className="w-5 h-5 text-primary" />
+                        <GradeIcon className="w-5 h-5 text-primary" />
                       </div>
                       <div>
                         <p className="text-sm font-medium">
@@ -406,17 +410,17 @@ const AcademyMemberManagement = ({ academyId }: AcademyMemberManagementProps) =>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {/* Role selector - available to those with manage_members permission */}
-                      {hasManageMembersPermission ? (
+                      {/* Grade selector - available to those with manage_members permission, but not for owner */}
+                      {hasManageMembersPermission && !isOwnerMember ? (
                         <Select
-                          value={member.role}
-                          onValueChange={(value) => handleRoleChange(member.id, value)}
+                          value={member.grade || 'admin'}
+                          onValueChange={(value) => handleGradeChange(member.id, value)}
                         >
                           <SelectTrigger className="w-24 h-8 text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {ROLE_OPTIONS.map((option) => (
+                            {GRADE_OPTIONS.map((option) => (
                               <SelectItem key={option.value} value={option.value}>
                                 <span className="flex items-center gap-2">
                                   <option.icon className="w-3 h-3" />
@@ -427,8 +431,8 @@ const AcademyMemberManagement = ({ academyId }: AcademyMemberManagementProps) =>
                           </SelectContent>
                         </Select>
                       ) : (
-                        <Badge variant={member.role === 'owner' ? 'default' : 'secondary'}>
-                          {getRoleLabel(member.role)}
+                        <Badge variant={isOwnerMember ? 'default' : 'secondary'}>
+                          {getGradeLabel(member.role, member.grade)}
                         </Badge>
                       )}
                       {/* Only show management buttons to owner */}
