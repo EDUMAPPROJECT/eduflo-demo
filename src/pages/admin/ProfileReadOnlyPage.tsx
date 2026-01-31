@@ -421,7 +421,7 @@ const ProfileReadOnlyPage = () => {
                     {classes.map((cls) => {
                       const teacher = teachers.find(t => t.id === cls.teacher_id);
                       return (
-                        <div key={cls.id} className="p-4 bg-secondary/30 rounded-xl space-y-2">
+                        <div key={cls.id} className="p-4 bg-secondary/30 rounded-xl space-y-3">
                           <div className="flex items-center justify-between">
                             <h4 className="font-medium text-foreground">{cls.name}</h4>
                             <div className="flex items-center gap-2">
@@ -431,17 +431,11 @@ const ProfileReadOnlyPage = () => {
                             </div>
                           </div>
 
-                          <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
                             {cls.target_grade && (
                               <span className="flex items-center gap-1">
                                 <GraduationCap className="w-3 h-3" />
                                 {cls.target_grade}
-                              </span>
-                            )}
-                            {cls.schedule && (
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {cls.schedule}
                               </span>
                             )}
                             {cls.fee && (
@@ -449,10 +443,18 @@ const ProfileReadOnlyPage = () => {
                             )}
                           </div>
 
+                          {cls.schedule && (
+                            <div className="flex items-center gap-2 text-sm bg-primary/10 text-primary px-3 py-1.5 rounded-lg">
+                              <Clock className="w-4 h-4 flex-shrink-0" />
+                              <span className="font-medium">{cls.schedule}</span>
+                            </div>
+                          )}
+
                           {teacher && (
-                            <p className="text-sm text-muted-foreground">
-                              담당: {teacher.name}
-                            </p>
+                            <div className="flex items-center gap-2 text-sm text-foreground">
+                              <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                              <span>담당: <span className="font-medium">{teacher.name}</span></span>
+                            </div>
                           )}
 
                           {cls.description && (
