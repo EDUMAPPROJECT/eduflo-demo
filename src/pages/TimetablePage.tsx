@@ -1,4 +1,4 @@
-import { ArrowLeft, Plus, MapPin, Clock, School } from "lucide-react";
+import { ArrowLeft, Plus, Clock, School } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import BottomNavigation from "@/components/BottomNavigation";
@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useRoutePrefix } from "@/hooks/useRoutePrefix";
 
 interface ScheduleBlock {
   id: string;
@@ -40,6 +41,7 @@ interface ManualSchedule {
 
 const TimetablePage = () => {
   const navigate = useNavigate();
+  const routePrefix = useRoutePrefix();
   const { children, selectedChildId, hasChildren } = useChildren();
   const { enrollments, loading: enrollmentsLoading, userId } = useClassEnrollments(hasChildren ? selectedChildId : undefined);
   const [manualSchedules, setManualSchedules] = useState<ManualSchedule[]>([]);
@@ -496,7 +498,7 @@ const TimetablePage = () => {
               <Button 
                 onClick={() => {
                   setShowClassDetailDialog(false);
-                  navigate(`/academy/${selectedBlock.academyId}`);
+                  navigate(`${routePrefix}/academy/${selectedBlock.academyId}`);
                 }}
                 className="flex-1"
               >

@@ -6,7 +6,8 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, MapPin, GraduationCap, User, MessageSquare, Map } from "lucide-react";
+import { Calendar, Clock, MapPin, GraduationCap, User, MessageSquare, Map, Copy, Building2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface ReservationDetailSheetProps {
   open: boolean;
@@ -20,6 +21,7 @@ interface ReservationDetailSheetProps {
     message?: string | null;
     // Reservation specific
     academyName?: string;
+    academyAddress?: string | null;
     reservationDate?: string;
     reservationTime?: string;
     status?: string;
@@ -29,6 +31,7 @@ interface ReservationDetailSheetProps {
     seminarTime?: string;
     seminarLocation?: string | null;
     seminarAcademyName?: string;
+    seminarAcademyAddress?: string | null;
     attendeeCount?: number | null;
     seminarStatus?: string;
   } | null;
@@ -73,6 +76,34 @@ const ReservationDetailSheet = ({
     const dayName = dayNames[date.getDay()];
     return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일(${dayName})`;
   };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("주소가 복사되었습니다");
+    } catch (err) {
+      toast.error("복사에 실패했습니다");
+    }
+  };
+
+  // Parse location to separate main and detail address
+  const parseLocation = (location: string | null | undefined) => {
+    if (!location) return { main: null, detail: null };
+    const parts = location.split(" | ");
+    return {
+      main: parts[0] || null,
+      detail: parts[1] || null
+    };
+  };
+
+  const locationParts = parseLocation(data.seminarLocation);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -122,6 +153,42 @@ const ReservationDetailSheet = ({
                     </div>
                   </div>
                 )}
+                {data.academyAddress && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <MapPin className="w-5 h-5 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-muted-foreground">학원 주소</p>
+                        <p className="font-medium">{data.academyAddress}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 ml-[52px]">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 gap-1.5"
+                        onClick={() => copyToClipboard(data.academyAddress || "")}
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        주소 복사
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 gap-1.5"
+                        onClick={() => {
+                          const encodedAddress = encodeURIComponent(data.academyAddress || "");
+                          window.open(`https://map.naver.com/v5/search/${encodedAddress}`, "_blank");
+                        }}
+                      >
+                        <Map className="w-3.5 h-3.5" />
+                        지도로 보기
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
@@ -136,43 +203,55 @@ const ReservationDetailSheet = ({
                     <p className="font-medium">{formatDate(data.seminarDate)}</p>
                   </div>
                 </div>
-                {data.seminarTime && (
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                      <Clock className="w-5 h-5 text-accent" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">설명회 시간</p>
-                      <p className="font-medium">{data.seminarTime}</p>
-                    </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-accent" />
                   </div>
-                )}
+                  <div>
+                    <p className="text-xs text-muted-foreground">설명회 시간</p>
+                    <p className="font-medium">{formatTime(data.seminarDate)}</p>
+                  </div>
+                </div>
               </>
             )}
 
-            {type === "seminar" && data.seminarLocation && (
+            {type === "seminar" && locationParts.main && (
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
                     <MapPin className="w-5 h-5 text-accent" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-xs text-muted-foreground">장소</p>
-                    <p className="font-medium">{data.seminarLocation}</p>
+                    <p className="font-medium">{locationParts.main}</p>
+                    {locationParts.detail && (
+                      <p className="text-sm text-muted-foreground">{locationParts.detail}</p>
+                    )}
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full gap-2"
-                  onClick={() => {
-                    const encodedLocation = encodeURIComponent(data.seminarLocation || "");
-                    window.open(`https://map.naver.com/v5/search/${encodedLocation}`, "_blank");
-                  }}
-                >
-                  <Map className="w-4 h-4" />
-                  지도로 위치 보기
-                </Button>
+                <div className="flex gap-2 ml-[52px]">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 gap-1.5"
+                    onClick={() => copyToClipboard(data.seminarLocation || "")}
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    주소 복사
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 gap-1.5"
+                    onClick={() => {
+                      const encodedLocation = encodeURIComponent(locationParts.main || "");
+                      window.open(`https://map.naver.com/v5/search/${encodedLocation}`, "_blank");
+                    }}
+                  >
+                    <Map className="w-3.5 h-3.5" />
+                    지도로 보기
+                  </Button>
+                </div>
               </div>
             )}
           </div>
