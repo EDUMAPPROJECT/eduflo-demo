@@ -475,6 +475,47 @@ export type Database = {
           },
         ]
       }
+      connection_codes: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          issuer_user_id: string
+          status: string
+          student_profile_id: string | null
+          used_by_parent_id: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          issuer_user_id: string
+          status?: string
+          student_profile_id?: string | null
+          used_by_parent_id?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          issuer_user_id?: string
+          status?: string
+          student_profile_id?: string | null
+          used_by_parent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connection_codes_student_profile_id_fkey"
+            columns: ["student_profile_id"]
+            isOneToOne: false
+            referencedRelation: "student_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consultation_reservations: {
         Row: {
           academy_id: string
@@ -693,6 +734,38 @@ export type Database = {
             columns: ["chat_room_id"]
             isOneToOne: false
             referencedRelation: "chat_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parent_child_relations: {
+        Row: {
+          created_at: string
+          id: string
+          is_primary: boolean | null
+          parent_user_id: string
+          student_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          parent_user_id: string
+          student_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          parent_user_id?: string
+          student_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_child_relations_student_profile_id_fkey"
+            columns: ["student_profile_id"]
+            isOneToOne: false
+            referencedRelation: "student_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -948,6 +1021,39 @@ export type Database = {
           },
         ]
       }
+      student_profiles: {
+        Row: {
+          created_at: string
+          grade: string | null
+          id: string
+          name: string
+          propensity_data: Json | null
+          school_name: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          grade?: string | null
+          id?: string
+          name: string
+          propensity_data?: Json | null
+          school_name?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          grade?: string | null
+          id?: string
+          name?: string
+          propensity_data?: Json | null
+          school_name?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       teachers: {
         Row: {
           academy_id: string
@@ -1018,6 +1124,7 @@ export type Database = {
       generate_academy_join_code: { Args: never; Returns: string }
       generate_connection_code: { Args: never; Returns: string }
       generate_random_nickname: { Args: never; Returns: string }
+      generate_student_connection_code: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
