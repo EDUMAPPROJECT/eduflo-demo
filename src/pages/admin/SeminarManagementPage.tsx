@@ -92,6 +92,7 @@ const SeminarManagementPage = () => {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [location, setLocation] = useState("");
+  const [locationDetail, setLocationDetail] = useState("");
   const [capacity, setCapacity] = useState(30);
   const [subject, setSubject] = useState("");
   const [targetGrade, setTargetGrade] = useState("");
@@ -212,6 +213,7 @@ const SeminarManagementPage = () => {
     setDate("");
     setTime("");
     setLocation("");
+    setLocationDetail("");
     setCapacity(30);
     setSubject("");
     setTargetGrade("");
@@ -226,7 +228,10 @@ const SeminarManagementPage = () => {
     const seminarDate = new Date(seminar.date);
     setDate(seminarDate.toISOString().split("T")[0]);
     setTime(seminarDate.toTimeString().slice(0, 5));
-    setLocation(seminar.location || "");
+    // Parse location for detail (format: "main address | detail address")
+    const locationParts = (seminar.location || "").split(" | ");
+    setLocation(locationParts[0] || "");
+    setLocationDetail(locationParts[1] || "");
     setCapacity(seminar.capacity || 30);
     setSubject(seminar.subject || "");
     setTargetGrade(seminar.target_grade || "");
@@ -253,12 +258,16 @@ const SeminarManagementPage = () => {
     setSubmitting(true);
     try {
       const dateTime = new Date(`${date}T${time}`).toISOString();
+      // Combine main location and detail address
+      const fullLocation = locationDetail.trim() 
+        ? `${location.trim()} | ${locationDetail.trim()}` 
+        : location.trim() || null;
 
       const seminarData = {
         title,
         description: description || null,
         date: dateTime,
-        location: location || null,
+        location: fullLocation,
         capacity,
         subject: subject || null,
         target_grade: targetGrade || null,
@@ -522,9 +531,15 @@ const SeminarManagementPage = () => {
             <div className="space-y-2">
               <Label>장소</Label>
               <Input
-                placeholder="설명회 장소"
+                placeholder="예: 서울시 강남구 테헤란로 123"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
+              />
+              <Input
+                placeholder="상세 주소 (예: 4층 회의실)"
+                value={locationDetail}
+                onChange={(e) => setLocationDetail(e.target.value)}
+                className="mt-2"
               />
             </div>
             <div className="space-y-2">

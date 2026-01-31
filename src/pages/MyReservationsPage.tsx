@@ -228,6 +228,7 @@ const MyReservationsPage = () => {
         studentGrade: reservation.student_grade,
         message: reservation.message,
         academyName: reservation.academy?.name,
+        academyAddress: reservation.academy?.address,
         reservationDate: reservation.reservation_date,
         reservationTime: reservation.reservation_time,
         status: reservation.status,
@@ -284,6 +285,16 @@ const MyReservationsPage = () => {
       month: "short",
       day: "numeric",
     });
+  };
+
+  const formatSeminarDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+    const dayName = dayNames[date.getDay()];
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    return `${date.getMonth() + 1}월 ${date.getDate()}일(${dayName}) ${timeStr}`;
   };
 
   // Check if seminar date has passed (auto-close)
@@ -519,20 +530,18 @@ const MyReservationsPage = () => {
                           </button>
                         </div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                        {app.seminar?.date && (
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            <span>{formatDate(app.seminar.date)}</span>
-                          </div>
-                        )}
-                        {app.seminar?.location && (
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            <span className="line-clamp-1">{app.seminar.location}</span>
-                          </div>
-                        )}
-                      </div>
+                      {app.seminar?.date && (
+                        <div className="flex items-center gap-2 text-sm text-accent font-medium">
+                          <Clock className="w-4 h-4" />
+                          <span>{formatSeminarDateTime(app.seminar.date)}</span>
+                        </div>
+                      )}
+                      {app.seminar?.location && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                          <MapPin className="w-3 h-3" />
+                          <span className="line-clamp-1">{app.seminar.location.split(" | ")[0]}</span>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
