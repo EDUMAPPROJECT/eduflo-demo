@@ -6,7 +6,7 @@ import Logo from "@/components/Logo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, LogOut, Pencil, Building2, Users, FileCheck, Loader2, Lock, Clock } from "lucide-react";
+import { User, LogOut, Pencil, Building2, Users, FileCheck, Loader2, Lock, Clock, Settings, Headphones } from "lucide-react";
 import { toast } from "sonner";
 import NicknameSettingsDialog from "@/components/NicknameSettingsDialog";
 import { useAcademyMembership } from "@/hooks/useAcademyMembership";
@@ -245,6 +245,63 @@ const AdminMyPage = () => {
 
         {/* Menu Items */}
         <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground">내 계정</h3>
+          
+          {/* Profile Management */}
+          <Card
+            className="shadow-card border-border cursor-pointer hover:shadow-soft transition-all duration-200"
+            onClick={() => navigate("/my/profile")}
+          >
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+                <User className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-foreground">내 정보</h4>
+                <p className="text-sm text-muted-foreground">
+                  개인정보를 관리합니다
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Settings */}
+          <Card
+            className="shadow-card border-border cursor-pointer hover:shadow-soft transition-all duration-200"
+            onClick={() => navigate("/settings")}
+          >
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+                <Settings className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-foreground">설정</h4>
+                <p className="text-sm text-muted-foreground">
+                  앱 설정을 변경합니다
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Customer Service */}
+          <Card
+            className="shadow-card border-border cursor-pointer hover:shadow-soft transition-all duration-200"
+            onClick={() => navigate("/customer-service")}
+          >
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+                <Headphones className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-foreground">고객센터</h4>
+                <p className="text-sm text-muted-foreground">
+                  문의 및 도움말
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Logout */}
           <Card
             className="shadow-card border-destructive/20 cursor-pointer hover:shadow-soft transition-all duration-200"
             onClick={handleLogout}
