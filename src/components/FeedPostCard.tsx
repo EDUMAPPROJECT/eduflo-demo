@@ -128,7 +128,7 @@ const FeedPostCard = ({ post, onLikeToggle, onAcademyClick, onCardClick }: FeedP
               {displayName}
             </span>
             <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 shrink-0 ${isSuperAdminPost ? 'bg-amber-500/20 text-amber-600' : 'bg-primary/10 text-primary'}`}>
-              {isSuperAdminPost ? '관리자' : '학원'}
+              {isSuperAdminPost ? '운영자' : '학원'}
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground">

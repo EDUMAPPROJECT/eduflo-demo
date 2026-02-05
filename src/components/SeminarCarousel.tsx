@@ -120,7 +120,7 @@ const SeminarCarousel = ({ seminars, loading }: SeminarCarouselProps) => {
                 <p className="text-xs text-muted-foreground mb-1 truncate">
                   {seminar.academy_id && seminar.academy 
                     ? seminar.academy.name 
-                    : (seminar.author?.user_name || "관리자")}
+                    : (seminar.author?.user_name || "운영자")}
                 </p>
                 <h4 className="font-medium text-foreground text-sm line-clamp-2 leading-tight mb-2">
                   {seminar.title}

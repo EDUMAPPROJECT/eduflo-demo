@@ -931,6 +931,7 @@ export type Database = {
         Row: {
           attendee_count: number | null
           created_at: string
+          custom_answers: Json | null
           id: string
           message: string | null
           seminar_id: string
@@ -941,6 +942,7 @@ export type Database = {
         Insert: {
           attendee_count?: number | null
           created_at?: string
+          custom_answers?: Json | null
           id?: string
           message?: string | null
           seminar_id: string
@@ -951,6 +953,7 @@ export type Database = {
         Update: {
           attendee_count?: number | null
           created_at?: string
+          custom_answers?: Json | null
           id?: string
           message?: string | null
           seminar_id?: string
@@ -974,6 +977,7 @@ export type Database = {
           author_id: string | null
           capacity: number | null
           created_at: string
+          custom_questions: string[] | null
           date: string
           description: string | null
           id: string
@@ -990,6 +994,7 @@ export type Database = {
           author_id?: string | null
           capacity?: number | null
           created_at?: string
+          custom_questions?: string[] | null
           date: string
           description?: string | null
           id?: string
@@ -1006,6 +1011,7 @@ export type Database = {
           author_id?: string | null
           capacity?: number | null
           created_at?: string
+          custom_questions?: string[] | null
           date?: string
           description?: string | null
           id?: string

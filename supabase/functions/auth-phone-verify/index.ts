@@ -1,7 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 /// <reference lib="deno.ns" />
 
-import { firebaseAdmin } from "../_shared/firebaseAdmin.ts";
+// Firebase Admin SDK is currently disabled
+// To enable, configure FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY secrets
+// and update firebaseAdmin.ts
 
 Deno.serve(async (req: Request) => {
   try {
@@ -14,16 +16,13 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const idToken = authHeader.replace("Bearer ", "");
-
-    const decoded = await firebaseAdmin.auth().verifyIdToken(idToken);
-
+    // Firebase verification is currently disabled
+    // Return error until Firebase is properly configured
     return new Response(
-      JSON.stringify({
-        firebaseUid: decoded.uid,
-        phoneNumber: decoded.phone_number,
+      JSON.stringify({ 
+        error: "Firebase phone verification is not configured. Please set up Firebase Admin SDK credentials." 
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { status: 503, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
     return new Response(
