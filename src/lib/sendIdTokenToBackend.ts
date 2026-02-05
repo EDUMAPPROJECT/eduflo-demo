@@ -10,11 +10,15 @@ export async function sendIdTokenToBackend(
   role: AuthRole,
   isSignup: boolean
 ): Promise<{ ok: boolean; error?: string }> {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL ?? "";
+  // Lovable 등에서 Supabase만 관리할 때는 VITE_SUPABASE_URL로 Edge Function 호출
+  const backendUrl =
+    import.meta.env.VITE_BACKEND_URL ?? import.meta.env.VITE_SUPABASE_URL ?? "";
   if (!backendUrl) {
     return { ok: true };
   }
-  const url = isSignup ? `${backendUrl}/auth/firebase-signup` : `${backendUrl}/auth/firebase-login`;
+  const path = isSignup ? "firebase-signup" : "firebase-login";
+  const base = backendUrl.replace(/\/$/, "");
+  const url = base.includes("/functions/v1") ? `${base}/${path}` : `${base}/functions/v1/${path}`;
   const body = { idToken, role };
   try {
     const res = await fetch(url, {
