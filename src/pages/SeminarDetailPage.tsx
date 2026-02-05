@@ -40,7 +40,8 @@ import { seminarApplicationSchema, validateInput } from "@/lib/validation";
 
 interface Seminar {
   id: string;
-  academy_id: string;
+  academy_id: string | null;
+  author_id: string | null;
   title: string;
   description: string | null;
   date: string;
@@ -50,11 +51,15 @@ interface Seminar {
   status: "recruiting" | "closed";
   subject: string | null;
   target_grade: string | null;
+  custom_questions: string[] | null;
   academy?: {
     name: string;
     address: string | null;
     profile_image: string | null;
-  };
+  } | null;
+  author?: {
+    user_name: string | null;
+  } | null;
 }
 
 const SeminarDetailPage = () => {
@@ -75,6 +80,7 @@ const SeminarDetailPage = () => {
   const [studentGrade, setStudentGrade] = useState("");
   const [attendeeCount, setAttendeeCount] = useState(1);
   const [message, setMessage] = useState("");
+  const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({});
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -106,7 +112,22 @@ const SeminarDetailPage = () => {
         .maybeSingle();
 
       if (error) throw error;
-      setSeminar(data as any);
+      
+      // If no academy, fetch author name
+      let seminarData = data as any;
+      if (seminarData && !seminarData.academy_id && seminarData.author_id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("user_name")
+          .eq("id", seminarData.author_id)
+          .maybeSingle();
+        
+        if (profile) {
+          seminarData = { ...seminarData, author: profile };
+        }
+      }
+      
+      setSeminar(seminarData);
     } catch (error) {
       logError("fetch-seminar", error);
       toast.error("설명회 정보를 불러올 수 없습니다");
@@ -177,6 +198,7 @@ const SeminarDetailPage = () => {
         student_grade: validatedData.student_grade,
         attendee_count: validatedData.attendee_count,
         message: validatedData.message,
+        custom_answers: Object.keys(customAnswers).length > 0 ? customAnswers : null,
       });
 
       if (error) throw error;
@@ -204,6 +226,7 @@ const SeminarDetailPage = () => {
     setStudentGrade("");
     setAttendeeCount(1);
     setMessage("");
+    setCustomAnswers({});
   };
 
   const formatDate = (dateString: string) => {
@@ -359,11 +382,11 @@ const SeminarDetailPage = () => {
 
       {/* Content */}
       <main className="max-w-lg mx-auto px-4 py-6">
-        {/* Academy Info */}
-        {seminar.academy && (
+        {/* Academy/Author Info */}
+        {(seminar.academy || seminar.author) && (
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
-              {seminar.academy.profile_image ? (
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden ${seminar.academy ? 'bg-secondary' : 'bg-primary/20'}`}>
+              {seminar.academy?.profile_image ? (
                 <img
                   src={seminar.academy.profile_image}
                   alt={seminar.academy.name}
@@ -373,9 +396,14 @@ const SeminarDetailPage = () => {
                 <Building2 className="w-5 h-5 text-primary" />
               )}
             </div>
-            <span className="text-sm font-medium text-muted-foreground">
-              {seminar.academy.name}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">
+                {seminar.academy ? seminar.academy.name : (seminar.author?.user_name || '운영자')}
+              </span>
+              {!seminar.academy && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600">운영자</span>
+              )}
+            </div>
           </div>
         )}
 
@@ -563,6 +591,27 @@ const SeminarDetailPage = () => {
                 rows={3}
               />
             </div>
+
+            {/* Custom Questions from Seminar */}
+            {seminar.custom_questions && seminar.custom_questions.length > 0 && (
+              <div className="space-y-3 pt-3 border-t border-border">
+                <p className="text-sm font-medium text-foreground">추가 질문</p>
+                {seminar.custom_questions.map((question, index) => (
+                  <div key={index} className="space-y-1">
+                    <Label className="text-sm text-muted-foreground">{question}</Label>
+                    <Input
+                      placeholder="답변을 입력하세요"
+                      value={customAnswers[question] || ""}
+                      onChange={(e) => setCustomAnswers({
+                        ...customAnswers,
+                        [question]: e.target.value
+                      })}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
             <Button
               className="w-full h-12 font-semibold"
               onClick={handleApply}

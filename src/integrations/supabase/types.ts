@@ -601,7 +601,8 @@ export type Database = {
       }
       feed_posts: {
         Row: {
-          academy_id: string
+          academy_id: string | null
+          author_id: string | null
           body: string | null
           created_at: string
           id: string
@@ -614,7 +615,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          academy_id: string
+          academy_id?: string | null
+          author_id?: string | null
           body?: string | null
           created_at?: string
           id?: string
@@ -627,7 +629,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          academy_id?: string
+          academy_id?: string | null
+          author_id?: string | null
           body?: string | null
           created_at?: string
           id?: string
@@ -928,6 +931,7 @@ export type Database = {
         Row: {
           attendee_count: number | null
           created_at: string
+          custom_answers: Json | null
           id: string
           message: string | null
           seminar_id: string
@@ -938,6 +942,7 @@ export type Database = {
         Insert: {
           attendee_count?: number | null
           created_at?: string
+          custom_answers?: Json | null
           id?: string
           message?: string | null
           seminar_id: string
@@ -948,6 +953,7 @@ export type Database = {
         Update: {
           attendee_count?: number | null
           created_at?: string
+          custom_answers?: Json | null
           id?: string
           message?: string | null
           seminar_id?: string
@@ -967,9 +973,11 @@ export type Database = {
       }
       seminars: {
         Row: {
-          academy_id: string
+          academy_id: string | null
+          author_id: string | null
           capacity: number | null
           created_at: string
+          custom_questions: string[] | null
           date: string
           description: string | null
           id: string
@@ -982,9 +990,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          academy_id: string
+          academy_id?: string | null
+          author_id?: string | null
           capacity?: number | null
           created_at?: string
+          custom_questions?: string[] | null
           date: string
           description?: string | null
           id?: string
@@ -997,9 +1007,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          academy_id?: string
+          academy_id?: string | null
+          author_id?: string | null
           capacity?: number | null
           created_at?: string
+          custom_questions?: string[] | null
           date?: string
           description?: string | null
           id?: string
