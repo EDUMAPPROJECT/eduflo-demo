@@ -51,6 +51,7 @@ interface Seminar {
   status: "recruiting" | "closed";
   subject: string | null;
   target_grade: string | null;
+  custom_questions: string[] | null;
   academy?: {
     name: string;
     address: string | null;
@@ -79,6 +80,7 @@ const SeminarDetailPage = () => {
   const [studentGrade, setStudentGrade] = useState("");
   const [attendeeCount, setAttendeeCount] = useState(1);
   const [message, setMessage] = useState("");
+  const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({});
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -196,6 +198,7 @@ const SeminarDetailPage = () => {
         student_grade: validatedData.student_grade,
         attendee_count: validatedData.attendee_count,
         message: validatedData.message,
+        custom_answers: Object.keys(customAnswers).length > 0 ? customAnswers : null,
       });
 
       if (error) throw error;
@@ -223,6 +226,7 @@ const SeminarDetailPage = () => {
     setStudentGrade("");
     setAttendeeCount(1);
     setMessage("");
+    setCustomAnswers({});
   };
 
   const formatDate = (dateString: string) => {
@@ -394,10 +398,10 @@ const SeminarDetailPage = () => {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-muted-foreground">
-                {seminar.academy ? seminar.academy.name : (seminar.author?.user_name || '관리자')}
+                {seminar.academy ? seminar.academy.name : (seminar.author?.user_name || '운영자')}
               </span>
               {!seminar.academy && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600">관리자</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600">운영자</span>
               )}
             </div>
           </div>
@@ -587,6 +591,27 @@ const SeminarDetailPage = () => {
                 rows={3}
               />
             </div>
+
+            {/* Custom Questions from Seminar */}
+            {seminar.custom_questions && seminar.custom_questions.length > 0 && (
+              <div className="space-y-3 pt-3 border-t border-border">
+                <p className="text-sm font-medium text-foreground">추가 질문</p>
+                {seminar.custom_questions.map((question, index) => (
+                  <div key={index} className="space-y-1">
+                    <Label className="text-sm text-muted-foreground">{question}</Label>
+                    <Input
+                      placeholder="답변을 입력하세요"
+                      value={customAnswers[question] || ""}
+                      onChange={(e) => setCustomAnswers({
+                        ...customAnswers,
+                        [question]: e.target.value
+                      })}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
             <Button
               className="w-full h-12 font-semibold"
               onClick={handleApply}

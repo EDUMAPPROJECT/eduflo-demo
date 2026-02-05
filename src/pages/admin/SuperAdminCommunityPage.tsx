@@ -103,7 +103,7 @@ const SuperAdminCommunityPage = () => {
         
         if (profiles) {
           authorsMap = profiles.reduce((acc, p) => {
-            acc[p.id] = p.user_name || '관리자';
+            acc[p.id] = p.user_name || '운영자';
             return acc;
           }, {} as Record<string, string>);
         }
@@ -111,7 +111,7 @@ const SuperAdminCommunityPage = () => {
 
       setPosts((data || []).map(post => ({
         ...post,
-        author: { user_name: post.author_id ? authorsMap[post.author_id] || '관리자' : '관리자' }
+        author: { user_name: post.author_id ? authorsMap[post.author_id] || '운영자' : '운영자' }
       })));
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -291,7 +291,7 @@ const SuperAdminCommunityPage = () => {
                         </div>
                         <h3 className="font-medium text-foreground truncate">{post.title}</h3>
                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                          <span>{post.author?.user_name || '관리자'}</span>
+                          <span>{post.author?.user_name || '운영자'}</span>
                           <span>·</span>
                           <span>{format(new Date(post.created_at), 'M/d HH:mm', { locale: ko })}</span>
                         </div>

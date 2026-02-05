@@ -173,7 +173,7 @@ const FeedPostDetailSheet = ({
   // Check if this is a super admin post
   const isSuperAdminPost = !post.academy_id || !post.academy;
   const displayName = isSuperAdminPost 
-    ? (post.author?.user_name || '관리자') 
+    ? (post.author?.user_name || '운영자') 
     : (post.academy?.name || '학원');
   const displayInitial = displayName.charAt(0);
   const profileImage = isSuperAdminPost ? null : post.academy?.profile_image;
@@ -220,7 +220,7 @@ const FeedPostDetailSheet = ({
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-foreground">{displayName}</p>
                       {isSuperAdminPost && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600">관리자</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600">운영자</span>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">

@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import ImageUpload from "@/components/ImageUpload";
+import AddressSearch from "@/components/AddressSearch";
 import { 
   ArrowLeft, 
   Shield, 
@@ -30,9 +31,10 @@ import {
   Plus,
   Calendar,
   MapPin,
-  Users,
   Trash2,
-  Edit
+  Edit,
+  X,
+  HelpCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -51,6 +53,7 @@ interface Seminar {
   target_grade: string | null;
   author_id: string | null;
   academy_id: string | null;
+  custom_questions: string[] | null;
   author?: {
     user_name: string | null;
   };
@@ -62,6 +65,9 @@ const gradeOptions = [
   { value: '고등', label: '고등학생' },
   { value: '전체', label: '전체' },
 ];
+
+const hourOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+const minuteOptions = ['00', '15', '30', '45'];
 
 const SuperAdminSeminarPage = () => {
   const navigate = useNavigate();
@@ -75,12 +81,15 @@ const SuperAdminSeminarPage = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
+  const [hour, setHour] = useState('10');
+  const [minute, setMinute] = useState('00');
   const [location, setLocation] = useState('');
+  const [locationDetail, setLocationDetail] = useState('');
   const [capacity, setCapacity] = useState(30);
   const [subject, setSubject] = useState('');
   const [targetGrade, setTargetGrade] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [customQuestions, setCustomQuestions] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -111,7 +120,7 @@ const SuperAdminSeminarPage = () => {
         
         if (profiles) {
           authorsMap = profiles.reduce((acc, p) => {
-            acc[p.id] = p.user_name || '관리자';
+            acc[p.id] = p.user_name || '운영자';
             return acc;
           }, {} as Record<string, string>);
         }
@@ -119,7 +128,7 @@ const SuperAdminSeminarPage = () => {
 
       setSeminars((data || []).map(seminar => ({
         ...seminar,
-        author: { user_name: seminar.author_id ? authorsMap[seminar.author_id] || '관리자' : '관리자' }
+        author: { user_name: seminar.author_id ? authorsMap[seminar.author_id] || '운영자' : '운영자' }
       })));
     } catch (error) {
       console.error('Error fetching seminars:', error);
@@ -133,12 +142,15 @@ const SuperAdminSeminarPage = () => {
     setTitle('');
     setDescription('');
     setDate('');
-    setTime('');
+    setHour('10');
+    setMinute('00');
     setLocation('');
+    setLocationDetail('');
     setCapacity(30);
     setSubject('');
     setTargetGrade('');
     setImageUrl('');
+    setCustomQuestions([]);
     setEditingSeminar(null);
   };
 
@@ -149,20 +161,48 @@ const SuperAdminSeminarPage = () => {
       setDescription(seminar.description || '');
       const seminarDate = new Date(seminar.date);
       setDate(format(seminarDate, 'yyyy-MM-dd'));
-      setTime(format(seminarDate, 'HH:mm'));
-      setLocation(seminar.location || '');
+      setHour(format(seminarDate, 'HH'));
+      setMinute(format(seminarDate, 'mm'));
+      // Parse location
+      if (seminar.location) {
+        const parts = seminar.location.split(' | ');
+        setLocation(parts[0] || '');
+        setLocationDetail(parts[1] || '');
+      } else {
+        setLocation('');
+        setLocationDetail('');
+      }
       setCapacity(seminar.capacity || 30);
       setSubject(seminar.subject || '');
       setTargetGrade(seminar.target_grade || '');
       setImageUrl(seminar.image_url || '');
+      setCustomQuestions(seminar.custom_questions || []);
     } else {
       resetForm();
     }
     setDialogOpen(true);
   };
 
+  const handleAddQuestion = () => {
+    if (customQuestions.length >= 3) {
+      toast.error('질문은 최대 3개까지 추가할 수 있습니다');
+      return;
+    }
+    setCustomQuestions([...customQuestions, '']);
+  };
+
+  const handleQuestionChange = (index: number, value: string) => {
+    const updated = [...customQuestions];
+    updated[index] = value;
+    setCustomQuestions(updated);
+  };
+
+  const handleRemoveQuestion = (index: number) => {
+    setCustomQuestions(customQuestions.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async () => {
-    if (!title.trim() || !date || !time) {
+    if (!title.trim() || !date) {
       toast.error('필수 항목을 입력해주세요');
       return;
     }
@@ -175,13 +215,19 @@ const SuperAdminSeminarPage = () => {
         return;
       }
 
-      const seminarDate = new Date(`${date}T${time}`);
+      const seminarDate = new Date(`${date}T${hour}:${minute}`);
+      const fullLocation = locationDetail 
+        ? `${location} | ${locationDetail}` 
+        : location;
+
+      // Filter out empty questions
+      const validQuestions = customQuestions.filter(q => q.trim());
 
       const seminarData = {
         title: title.trim(),
         description: description.trim() || null,
         date: seminarDate.toISOString(),
-        location: location.trim() || null,
+        location: fullLocation.trim() || null,
         capacity,
         subject: subject.trim() || null,
         target_grade: targetGrade || null,
@@ -189,6 +235,7 @@ const SuperAdminSeminarPage = () => {
         author_id: session.user.id,
         academy_id: null,
         status: 'recruiting' as const,
+        custom_questions: validQuestions.length > 0 ? validQuestions : null,
         updated_at: new Date().toISOString(),
       };
 
@@ -301,6 +348,12 @@ const SuperAdminSeminarPage = () => {
                           <Badge variant={isPast ? 'secondary' : seminar.status === 'recruiting' ? 'default' : 'secondary'}>
                             {isPast ? '종료' : seminar.status === 'recruiting' ? '모집중' : '마감'}
                           </Badge>
+                          {seminar.custom_questions && seminar.custom_questions.length > 0 && (
+                            <Badge variant="outline" className="text-xs">
+                              <HelpCircle className="w-3 h-3 mr-1" />
+                              질문 {seminar.custom_questions.length}개
+                            </Badge>
+                          )}
                         </div>
                         <h3 className="font-medium text-foreground truncate">{seminar.title}</h3>
                         <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
@@ -311,12 +364,12 @@ const SuperAdminSeminarPage = () => {
                           {seminar.location && (
                             <span className="flex items-center gap-1 truncate">
                               <MapPin className="w-3 h-3 shrink-0" />
-                              {seminar.location}
+                              {seminar.location.split(' | ')[0]}
                             </span>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          등록자: {seminar.author?.user_name || '관리자'}
+                          등록자: {seminar.author?.user_name || '운영자'}
                         </p>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
@@ -363,31 +416,57 @@ const SuperAdminSeminarPage = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>날짜 *</Label>
-                <Input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>시간 *</Label>
-                <Input
-                  type="time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                />
+            <div className="space-y-2">
+              <Label>날짜 *</Label>
+              <Input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>시간 *</Label>
+              <div className="flex items-center gap-2">
+                <Select value={hour} onValueChange={setHour}>
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {hourOptions.map(h => (
+                      <SelectItem key={h} value={h}>{h}시</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="text-muted-foreground">:</span>
+                <Select value={minute} onValueChange={setMinute}>
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {minuteOptions.map(m => (
+                      <SelectItem key={m} value={m}>{m}분</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>장소</Label>
-              <Input
-                placeholder="설명회 장소"
+              <Label>장소 (기본 주소)</Label>
+              <AddressSearch
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                onChange={setLocation}
+                placeholder="주소를 검색하세요"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>상세 주소</Label>
+              <Input
+                placeholder="상세 주소 (예: 3층 세미나실)"
+                value={locationDetail}
+                onChange={(e) => setLocationDetail(e.target.value)}
               />
             </div>
 
@@ -447,10 +526,52 @@ const SuperAdminSeminarPage = () => {
               />
             </div>
 
+            {/* Custom Questions Section */}
+            <div className="space-y-3 pt-2 border-t border-border">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2">
+                  <HelpCircle className="w-4 h-4" />
+                  신청자 질문 (최대 3개)
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddQuestion}
+                  disabled={customQuestions.length >= 3}
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  추가
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                학부모가 신청 시 답변해야 할 질문을 추가할 수 있습니다.
+              </p>
+              {customQuestions.map((question, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    placeholder={`질문 ${index + 1}`}
+                    value={question}
+                    onChange={(e) => handleQuestionChange(index, e.target.value)}
+                    maxLength={100}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveQuestion(index)}
+                    className="shrink-0 text-destructive hover:text-destructive"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
             <Button
               className="w-full"
               onClick={handleSubmit}
-              disabled={submitting || !title.trim() || !date || !time}
+              disabled={submitting || !title.trim() || !date}
             >
               {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {submitting ? '저장 중...' : editingSeminar ? '수정' : '등록'}
