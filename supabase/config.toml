@@ -1,1 +1,11 @@
 project_id = "tglgxdfqfwspykzxwxgy"
+[functions.auth-phone-verify]
+enabled = true
+verify_jwt = true
+import_map = "./functions/auth-phone-verify/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/auth-phone-verify/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/auth-phone-verify/*.html" ]
