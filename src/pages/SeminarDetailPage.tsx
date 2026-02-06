@@ -209,7 +209,7 @@ const SeminarDetailPage = () => {
 
       if (error) throw error;
 
-      toast.success("설명회 신청이 완료되었습니다");
+      toast.success((seminar as any).completion_message || "설명회 신청이 완료되었습니다");
       setIsDialogOpen(false);
       setHasApplied(true);
       setMyApplication({ student_name: parentName.trim() });
@@ -548,11 +548,13 @@ const SeminarDetailPage = () => {
                 <span className="font-bold text-lg">신청 완료</span>
               </div>
               <p className="text-sm text-foreground">
-                <span className="font-semibold">{myApplication.student_name}</span> ({myApplication.student_grade})
+                <span className="font-semibold">{myApplication.student_name}</span>
               </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {myApplication.attendee_count}명 참석 예정
-              </p>
+              {(seminar as any).completion_message && (
+                <p className="text-sm text-foreground mt-2 whitespace-pre-wrap">
+                  {(seminar as any).completion_message}
+                </p>
+              )}
             </div>
           </div>
         )}
