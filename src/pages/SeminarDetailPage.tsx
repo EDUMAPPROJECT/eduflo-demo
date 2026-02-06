@@ -79,6 +79,8 @@ const SeminarDetailPage = () => {
   const [myApplication, setMyApplication] = useState<any>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  const [completionMessage, setCompletionMessage] = useState("");
 
   // Form state
   const [parentName, setParentName] = useState("");
@@ -200,20 +202,28 @@ const SeminarDetailPage = () => {
 
     setSubmitting(true);
     try {
+      // Determine status based on confirmation_mode
+      const confirmationMode = (seminar as any).confirmation_mode || 'auto';
+      const applicationStatus = confirmationMode === 'manual' ? 'pending' : 'confirmed';
+
       const { error } = await supabase.from("seminar_applications").insert({
         seminar_id: id,
         user_id: user.id,
         student_name: parentName.trim(),
+        status: applicationStatus,
         custom_answers: (Object.keys(surveyAnswers).length > 0 ? { ...surveyAnswers, _parentPhone: parentPhone.trim() } : { _parentPhone: parentPhone.trim() }) as any,
-      });
+      } as any);
 
       if (error) throw error;
 
-      toast.success((seminar as any).completion_message || "설명회 신청이 완료되었습니다");
       setIsDialogOpen(false);
       setHasApplied(true);
       setMyApplication({ student_name: parentName.trim() });
       fetchApplicationCount();
+
+      // Show completion dialog
+      setCompletionMessage((seminar as any).completion_message || "설명회 신청이 완료되었습니다");
+      setShowCompletionDialog(true);
     } catch (error) {
       logError("apply-seminar", error);
       toast.error("신청에 실패했습니다");
@@ -672,6 +682,30 @@ const SeminarDetailPage = () => {
         </DialogContent>
       </Dialog>
       <LoginRequiredDialog open={showLoginDialog} onOpenChange={setShowLoginDialog} />
+
+      {/* Completion Message Dialog */}
+      <Dialog open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>
+        <DialogContent className="max-w-sm mx-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-primary" />
+              신청 완료
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-foreground whitespace-pre-wrap">
+              {completionMessage.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
+                part.startsWith('**') && part.endsWith('**')
+                  ? <strong key={i}>{part.slice(2, -2)}</strong>
+                  : part
+              )}
+            </p>
+          </div>
+          <Button className="w-full" onClick={() => setShowCompletionDialog(false)}>
+            확인
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

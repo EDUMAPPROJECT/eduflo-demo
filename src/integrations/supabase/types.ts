@@ -935,6 +935,7 @@ export type Database = {
           id: string
           message: string | null
           seminar_id: string
+          status: string
           student_grade: string | null
           student_name: string
           user_id: string
@@ -946,6 +947,7 @@ export type Database = {
           id?: string
           message?: string | null
           seminar_id: string
+          status?: string
           student_grade?: string | null
           student_name: string
           user_id: string
@@ -957,6 +959,7 @@ export type Database = {
           id?: string
           message?: string | null
           seminar_id?: string
+          status?: string
           student_grade?: string | null
           student_name?: string
           user_id?: string

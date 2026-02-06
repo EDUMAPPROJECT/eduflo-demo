@@ -41,6 +41,7 @@ interface SeminarApplication {
   attendee_count: number | null;
   message: string | null;
   created_at: string;
+  status?: string;
   seminar?: {
     id: string;
     title: string;
@@ -48,6 +49,7 @@ interface SeminarApplication {
     time?: string | null;
     location: string | null;
     status: "recruiting" | "closed";
+    confirmation_mode?: string;
     academy?: {
       name: string;
     };
@@ -152,6 +154,7 @@ const MyReservationsPage = () => {
             date,
             location,
             status,
+            confirmation_mode,
             academy:academies (
               name
             )
@@ -237,6 +240,15 @@ const MyReservationsPage = () => {
   };
 
   const openSeminarDetail = (app: SeminarApplication) => {
+    // Determine display status based on confirmation_mode and application status
+    const appStatus = (app as any).status || 'confirmed';
+    let seminarDisplayStatus = "applied";
+    if (appStatus === 'pending') {
+      seminarDisplayStatus = "pending_approval";
+    } else if (appStatus === 'confirmed') {
+      seminarDisplayStatus = "applied";
+    }
+
     setDetailSheet({
       open: true,
       type: "seminar",
@@ -251,7 +263,7 @@ const MyReservationsPage = () => {
         seminarLocation: app.seminar?.location,
         seminarAcademyName: app.seminar?.academy?.name,
         attendeeCount: app.attendee_count,
-        seminarStatus: "applied", // Always show as "신청 완료" for applied seminars
+        seminarStatus: seminarDisplayStatus,
       }
     });
   };
@@ -512,12 +524,15 @@ const MyReservationsPage = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge 
-                            variant="secondary"
-                            className="text-xs bg-green-100 text-green-700"
-                          >
-                            신청 완료
-                          </Badge>
+                          {(app as any).status === 'pending' ? (
+                            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700">
+                              승인 대기
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                              신청 완료
+                            </Badge>
+                          )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -536,12 +551,19 @@ const MyReservationsPage = () => {
                           <span>{formatSeminarDateTime(app.seminar.date)}</span>
                         </div>
                       )}
-                      {app.seminar?.location && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                          <MapPin className="w-3 h-3" />
-                          <span className="line-clamp-1">{app.seminar.location.split(" | ")[0]}</span>
-                        </div>
-                      )}
+                      {app.seminar?.location && (() => {
+                        let locDisplay = app.seminar.location;
+                        try {
+                          const parsed = JSON.parse(app.seminar.location);
+                          locDisplay = parsed.name || parsed.address || app.seminar.location;
+                        } catch {}
+                        return (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                            <MapPin className="w-3 h-3" />
+                            <span className="line-clamp-1">{locDisplay}</span>
+                          </div>
+                        );
+                      })()}
                     </CardContent>
                   </Card>
                 ))}
@@ -766,12 +788,15 @@ const MyReservationsPage = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge 
-                            variant="secondary"
-                            className="text-xs bg-green-100 text-green-700"
-                          >
-                            신청 완료
-                          </Badge>
+                          {(app as any).status === 'pending' ? (
+                            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700">
+                              승인 대기
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                              신청 완료
+                            </Badge>
+                          )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -796,12 +821,19 @@ const MyReservationsPage = () => {
                             <span>{formatDate(app.seminar.date)}</span>
                           </div>
                         )}
-                        {app.seminar?.location && (
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            <span className="line-clamp-1">{app.seminar.location}</span>
-                          </div>
-                        )}
+                        {app.seminar?.location && (() => {
+                          let locDisplay = app.seminar.location;
+                          try {
+                            const parsed = JSON.parse(app.seminar.location);
+                            locDisplay = parsed.name || parsed.address || app.seminar.location;
+                          } catch {}
+                          return (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              <span className="line-clamp-1">{locDisplay}</span>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </CardContent>
                   </Card>
