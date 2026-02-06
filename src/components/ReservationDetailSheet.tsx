@@ -61,10 +61,6 @@ const ReservationDetailSheet = ({
         return <Badge variant="destructive">취소됨</Badge>;
       case "recruiting":
         return <Badge variant="default">모집중</Badge>;
-      case "applied":
-        return <Badge variant="secondary" className="bg-green-100 text-green-700">신청 완료</Badge>;
-      case "pending_approval":
-        return <Badge variant="secondary" className="bg-amber-100 text-amber-700">승인 대기</Badge>;
       case "closed":
         return <Badge variant="secondary">마감</Badge>;
       default:
