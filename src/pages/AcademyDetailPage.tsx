@@ -922,7 +922,14 @@ const AcademyDetailPage = () => {
           <Button
             variant="outline"
             className="flex-1 h-11 text-sm gap-1.5"
-            onClick={handleStartChat}
+            onClick={() => {
+              if (!user) {
+                toast.error("로그인이 필요합니다. 로그인 페이지로 이동합니다.");
+                navigate("/auth");
+                return;
+              }
+              handleStartChat();
+            }}
             disabled={chatLoading}
           >
             <MessageCircle className="w-4 h-4" />
@@ -930,7 +937,14 @@ const AcademyDetailPage = () => {
           </Button>
           <Button
             className="flex-1 h-11 text-sm"
-            onClick={() => setIsDialogOpen(true)}
+            onClick={() => {
+              if (!user) {
+                toast.error("로그인이 필요합니다. 로그인 페이지로 이동합니다.");
+                navigate("/auth");
+                return;
+              }
+              setIsDialogOpen(true);
+            }}
           >
             방문 상담 신청
           </Button>
