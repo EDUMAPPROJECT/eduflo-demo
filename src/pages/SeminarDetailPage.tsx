@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Logo from "@/components/Logo";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -332,53 +333,127 @@ const SeminarDetailPage = () => {
         </div>
       </header>
 
-      {/* Hero Image */}
-      <div className="max-w-lg mx-auto relative bg-gradient-to-br from-primary/20 via-accent/10 to-secondary/30 flex items-center justify-center">
-        {seminar.image_url ? (
-          <img
-            src={seminar.image_url}
-            alt={seminar.title}
-            className="w-full h-auto max-h-[70vh] object-contain"
-          />
-        ) : (
-          <div className="text-center p-6">
-            <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
-              <GraduationCap className="w-12 h-12 text-primary" />
+      {/* Hero Image(s) */}
+      {(() => {
+        // Parse image URLs
+        let imageUrls: string[] = [];
+        if (seminar.image_url) {
+          try {
+            const parsed = JSON.parse(seminar.image_url);
+            imageUrls = Array.isArray(parsed) ? parsed : [seminar.image_url];
+          } catch {
+            imageUrls = [seminar.image_url];
+          }
+        }
+
+        if (imageUrls.length > 1) {
+          return (
+            <div className="max-w-lg mx-auto relative">
+              <ScrollArea className="w-full whitespace-nowrap">
+                <div className="flex gap-2 p-2">
+                  {imageUrls.map((url, idx) => (
+                    <div key={idx} className="relative shrink-0 w-[85%] first:ml-2 last:mr-2">
+                      <div className="bg-gradient-to-br from-primary/20 via-accent/10 to-secondary/30 rounded-xl overflow-hidden">
+                        <img
+                          src={url}
+                          alt={`${seminar.title} - ${idx + 1}`}
+                          className="w-full h-auto max-h-[70vh] object-contain"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+              
+              {/* Image Counter */}
+              <div className="absolute bottom-4 right-4 bg-card/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium text-foreground">
+                {imageUrls.length}장
+              </div>
+              
+              {/* D-Day Badge */}
+              {dDay && (
+                <div className="absolute top-6 right-6">
+                  <Badge
+                    className={`${
+                      dDay === "D-Day" || isUrgent
+                        ? "bg-destructive text-destructive-foreground animate-pulse"
+                        : "bg-card/90 text-foreground"
+                    } px-4 py-1.5 text-sm font-bold shadow-lg backdrop-blur-sm`}
+                  >
+                    {dDay}
+                  </Badge>
+                </div>
+              )}
+
+              {/* Status Badge */}
+              <div className="absolute top-6 left-6">
+                <Badge
+                  className={`${
+                    seminar.status === "recruiting"
+                      ? isUrgent
+                        ? "bg-destructive text-destructive-foreground"
+                        : "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  } px-4 py-1.5 text-sm font-semibold shadow-lg`}
+                >
+                  {seminar.status === "recruiting" ? (isUrgent ? "마감임박" : "모집중") : "마감"}
+                </Badge>
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground font-medium">설명회 포스터</p>
-          </div>
-        )}
+          );
+        } else {
+          // Single or no image
+          return (
+            <div className="max-w-lg mx-auto relative bg-gradient-to-br from-primary/20 via-accent/10 to-secondary/30 flex items-center justify-center">
+              {imageUrls.length === 1 ? (
+                <img
+                  src={imageUrls[0]}
+                  alt={seminar.title}
+                  className="w-full h-auto max-h-[70vh] object-contain"
+                />
+              ) : (
+                <div className="text-center p-6">
+                  <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
+                    <GraduationCap className="w-12 h-12 text-primary" />
+                  </div>
+                  <p className="text-sm text-muted-foreground font-medium">설명회 포스터</p>
+                </div>
+              )}
 
-        {/* D-Day Badge */}
-        {dDay && (
-          <div className="absolute top-4 right-4">
-            <Badge
-              className={`${
-                dDay === "D-Day" || isUrgent
-                  ? "bg-destructive text-destructive-foreground animate-pulse"
-                  : "bg-card/90 text-foreground"
-              } px-4 py-1.5 text-sm font-bold shadow-lg backdrop-blur-sm`}
-            >
-              {dDay}
-            </Badge>
-          </div>
-        )}
+              {/* D-Day Badge */}
+              {dDay && (
+                <div className="absolute top-4 right-4">
+                  <Badge
+                    className={`${
+                      dDay === "D-Day" || isUrgent
+                        ? "bg-destructive text-destructive-foreground animate-pulse"
+                        : "bg-card/90 text-foreground"
+                    } px-4 py-1.5 text-sm font-bold shadow-lg backdrop-blur-sm`}
+                  >
+                    {dDay}
+                  </Badge>
+                </div>
+              )}
 
-        {/* Status Badge */}
-        <div className="absolute top-4 left-4">
-          <Badge
-            className={`${
-              seminar.status === "recruiting"
-                ? isUrgent
-                  ? "bg-destructive text-destructive-foreground"
-                  : "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground"
-            } px-4 py-1.5 text-sm font-semibold shadow-lg`}
-          >
-            {seminar.status === "recruiting" ? (isUrgent ? "마감임박" : "모집중") : "마감"}
-          </Badge>
-        </div>
-      </div>
+              {/* Status Badge */}
+              <div className="absolute top-4 left-4">
+                <Badge
+                  className={`${
+                    seminar.status === "recruiting"
+                      ? isUrgent
+                        ? "bg-destructive text-destructive-foreground"
+                        : "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  } px-4 py-1.5 text-sm font-semibold shadow-lg`}
+                >
+                  {seminar.status === "recruiting" ? (isUrgent ? "마감임박" : "모집중") : "마감"}
+                </Badge>
+              </div>
+            </div>
+          );
+        }
+      })()}
 
       {/* Content */}
       <main className="max-w-lg mx-auto px-4 py-6">

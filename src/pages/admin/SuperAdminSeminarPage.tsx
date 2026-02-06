@@ -28,13 +28,26 @@ import {
   Shield, 
   Loader2,
   Plus,
-  Calendar,
-  MapPin,
+  Clock,
   Trash2,
   Edit,
   X,
-  HelpCircle
+  HelpCircle,
+  Users,
+  ChevronRight,
+  GraduationCap,
 } from "lucide-react";
+import AddressSearch from "@/components/AddressSearch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -53,7 +66,23 @@ interface Seminar {
   author_id: string | null;
   academy_id: string | null;
   custom_questions: string[] | null;
+  application_count?: number;
   author?: {
+    user_name: string | null;
+  };
+}
+
+interface Application {
+  id: string;
+  student_name: string;
+  student_grade: string | null;
+  attendee_count: number | null;
+  message: string | null;
+  custom_answers: Record<string, string> | null;
+  created_at: string;
+  user_id: string;
+  profile?: {
+    phone: string;
     user_name: string | null;
   };
 }
@@ -86,6 +115,10 @@ const SuperAdminSeminarPage = () => {
   const [seminarsLoading, setSeminarsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSeminar, setEditingSeminar] = useState<Seminar | null>(null);
+  const [selectedSeminar, setSelectedSeminar] = useState<Seminar | null>(null);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loadingApps, setLoadingApps] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   
   // Form state
   const [title, setTitle] = useState('');
@@ -135,15 +168,62 @@ const SuperAdminSeminarPage = () => {
         }
       }
 
-      setSeminars((data || []).map(seminar => ({
-        ...seminar,
-        author: { user_name: seminar.author_id ? authorsMap[seminar.author_id] || '운영자' : '운영자' }
-      })));
+      // Get application counts
+      const seminarsWithCounts = await Promise.all(
+        (data || []).map(async (seminar) => {
+          const { count } = await supabase
+            .from("seminar_applications")
+            .select("*", { count: "exact", head: true })
+            .eq("seminar_id", seminar.id);
+
+          return {
+            ...seminar,
+            application_count: count || 0,
+            author: { user_name: seminar.author_id ? authorsMap[seminar.author_id] || '운영자' : '운영자' }
+          };
+        })
+      );
+
+      setSeminars(seminarsWithCounts as Seminar[]);
     } catch (error) {
       console.error('Error fetching seminars:', error);
       toast.error('설명회를 불러오는데 실패했습니다');
     } finally {
       setSeminarsLoading(false);
+    }
+  };
+
+  const fetchApplications = async (seminarId: string) => {
+    setLoadingApps(true);
+    try {
+      const { data, error } = await supabase
+        .from("seminar_applications")
+        .select("*")
+        .eq("seminar_id", seminarId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const userIds = data.map((app) => app.user_id);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, phone, user_name")
+          .in("id", userIds);
+
+        const appsWithProfiles = data.map((app) => ({
+          ...app,
+          profile: profiles?.find((p) => p.id === app.user_id),
+        }));
+
+        setApplications(appsWithProfiles as Application[]);
+      } else {
+        setApplications([]);
+      }
+    } catch (error) {
+      console.error("Error fetching applications:", error);
+    } finally {
+      setLoadingApps(false);
     }
   };
 
@@ -170,12 +250,15 @@ const SuperAdminSeminarPage = () => {
       const seminarDate = new Date(seminar.date);
       setDate(format(seminarDate, 'yyyy-MM-dd'));
       setHour(format(seminarDate, 'HH'));
-      setMinute(format(seminarDate, 'mm'));
+      const mins = seminarDate.getMinutes();
+      const roundedMins = ['00', '15', '30', '45'].reduce((prev, curr) => 
+        Math.abs(parseInt(curr) - mins) < Math.abs(parseInt(prev) - mins) ? curr : prev
+      );
+      setMinute(roundedMins);
       setLocation(seminar.location || '');
       setCapacity(seminar.capacity || 30);
       setSubject(seminar.subject || '');
       setTargetGrade(seminar.target_grade || '');
-      // Parse image_url - could be JSON array or single URL
       try {
         const parsed = seminar.image_url ? JSON.parse(seminar.image_url) : [];
         setImageUrls(Array.isArray(parsed) ? parsed : seminar.image_url ? [seminar.image_url] : []);
@@ -222,8 +305,6 @@ const SuperAdminSeminarPage = () => {
       }
 
       const seminarDate = new Date(`${date}T${hour}:${minute}`);
-
-      // Filter out empty questions
       const validQuestions = customQuestions.filter(q => q.trim());
 
       const seminarData = {
@@ -270,22 +351,53 @@ const SuperAdminSeminarPage = () => {
     }
   };
 
-  const handleDelete = async (seminarId: string) => {
-    if (!confirm('이 설명회를 삭제하시겠습니까?')) return;
+  const handleDelete = async () => {
+    if (!deleteId) return;
 
     try {
       const { error } = await supabase
         .from('seminars')
         .delete()
-        .eq('id', seminarId);
+        .eq('id', deleteId);
 
       if (error) throw error;
       toast.success('설명회가 삭제되었습니다');
-      fetchSeminars();
+      setSeminars((prev) => prev.filter((s) => s.id !== deleteId));
     } catch (error) {
       console.error('Error deleting seminar:', error);
       toast.error('설명회 삭제에 실패했습니다');
+    } finally {
+      setDeleteId(null);
     }
+  };
+
+  const toggleStatus = async (seminar: Seminar) => {
+    try {
+      const newStatus = seminar.status === "recruiting" ? "closed" : "recruiting";
+      const { error } = await supabase
+        .from("seminars")
+        .update({ status: newStatus })
+        .eq("id", seminar.id);
+
+      if (error) throw error;
+
+      setSeminars((prev) =>
+        prev.map((s) => (s.id === seminar.id ? { ...s, status: newStatus } : s))
+      );
+      toast.success(newStatus === "closed" ? "마감되었습니다" : "모집이 재개되었습니다");
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast.error("상태 변경에 실패했습니다");
+    }
+  };
+
+  const isExpired = (dateString: string) => {
+    return new Date(dateString) < new Date();
+  };
+
+  const getEffectiveStatus = (seminar: Seminar) => {
+    if (isExpired(seminar.date)) return "closed";
+    return seminar.status;
   };
 
   if (loading) {
@@ -320,13 +432,11 @@ const SuperAdminSeminarPage = () => {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
-        {/* Add Button */}
         <Button onClick={() => handleOpenDialog()} className="w-full gap-2">
           <Plus className="w-4 h-4" />
           새 설명회 등록
         </Button>
 
-        {/* Seminars List */}
         {seminarsLoading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -340,58 +450,83 @@ const SuperAdminSeminarPage = () => {
         ) : (
           <div className="space-y-3">
             {seminars.map((seminar) => {
-              const seminarDate = new Date(seminar.date);
-              const isPast = seminarDate < new Date();
+              const effectiveStatus = getEffectiveStatus(seminar);
+              const expired = isExpired(seminar.date);
               return (
                 <Card key={seminar.id} className="shadow-card">
                   <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <Badge variant={isPast ? 'secondary' : seminar.status === 'recruiting' ? 'default' : 'secondary'}>
-                            {isPast ? '종료' : seminar.status === 'recruiting' ? '모집중' : '마감'}
-                          </Badge>
-                          {seminar.custom_questions && seminar.custom_questions.length > 0 && (
-                            <Badge variant="outline" className="text-xs">
-                              <HelpCircle className="w-3 h-3 mr-1" />
-                              질문 {seminar.custom_questions.length}개
-                            </Badge>
+                          {effectiveStatus === "recruiting" && (
+                            <Badge variant="default">모집중</Badge>
+                          )}
+                          {effectiveStatus === "closed" && (
+                            <Badge variant="secondary">{expired ? "기간 마감" : "마감"}</Badge>
+                          )}
+                          {seminar.subject && (
+                            <Badge variant="outline">{seminar.subject}</Badge>
                           )}
                         </div>
-                        <h3 className="font-medium text-foreground truncate">{seminar.title}</h3>
-                        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {format(seminarDate, 'M/d HH:mm', { locale: ko })}
-                          </span>
-                          {seminar.location && (
-                            <span className="flex items-center gap-1 truncate">
-                              <MapPin className="w-3 h-3 shrink-0" />
-                              {seminar.location.split(' | ')[0]}
-                            </span>
-                          )}
-                        </div>
+                        <h4 className="font-semibold text-foreground">
+                          {seminar.title}
+                        </h4>
                         <p className="text-xs text-muted-foreground mt-1">
                           등록자: {seminar.author?.user_name || '운영자'}
                         </p>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
-                          size="icon"
+                          size="sm"
                           onClick={() => handleOpenDialog(seminar)}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(seminar.id)}
+                          size="sm"
+                          onClick={() => setDeleteId(seminar.id)}
                           className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        {format(new Date(seminar.date), 'M/d HH:mm', { locale: ko })}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="w-4 h-4" />
+                        {seminar.application_count}/{seminar.capacity || 30}명
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleStatus(seminar)}
+                        className="flex-1"
+                        disabled={expired}
+                      >
+                        {expired ? "기간 종료" : (effectiveStatus === "recruiting" ? "마감하기" : "모집 재개")}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          setSelectedSeminar(seminar);
+                          fetchApplications(seminar.id);
+                        }}
+                      >
+                        신청자 명단
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -402,7 +537,10 @@ const SuperAdminSeminarPage = () => {
       </main>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={(open) => {
+        setDialogOpen(open);
+        if (!open) resetForm();
+      }}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingSeminar ? '설명회 수정' : '새 설명회 등록'}</DialogTitle>
@@ -457,10 +595,10 @@ const SuperAdminSeminarPage = () => {
 
             <div className="space-y-2">
               <Label>장소</Label>
-              <Input
-                placeholder="장소 (예: 서울시 강남구 역삼동 123-45, 3층)"
+              <AddressSearch
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                onChange={setLocation}
+                placeholder="주소를 입력하세요"
               />
             </div>
 
@@ -581,6 +719,88 @@ const SuperAdminSeminarPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Applications Dialog */}
+      <Dialog open={!!selectedSeminar} onOpenChange={(open) => !open && setSelectedSeminar(null)}>
+        <DialogContent className="max-w-sm mx-auto max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>신청자 명단</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {loadingApps ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+              </div>
+            ) : applications.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                신청자가 없습니다
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {applications.map((app) => (
+                  <div
+                    key={app.id}
+                    className="bg-muted/50 rounded-lg p-3"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <GraduationCap className="w-4 h-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">
+                          {app.student_name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {app.student_grade || "학년 미정"} ·{" "}
+                          {app.attendee_count || 1}명
+                        </p>
+                      </div>
+                    </div>
+                    {app.profile?.phone && (
+                      <p className="text-xs text-muted-foreground mb-1">
+                        📞 {app.profile.phone}
+                      </p>
+                    )}
+                    {app.message && (
+                      <p className="text-xs text-muted-foreground bg-background rounded p-2 mb-1">
+                        💬 {app.message}
+                      </p>
+                    )}
+                    {app.custom_answers && Object.keys(app.custom_answers).length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {Object.entries(app.custom_answers).map(([q, a], idx) => (
+                          <div key={idx} className="text-xs bg-background rounded p-2">
+                            <p className="text-muted-foreground font-medium">❓ {q}</p>
+                            <p className="text-foreground mt-0.5">{a}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>설명회 삭제</AlertDialogTitle>
+            <AlertDialogDescription>
+              이 설명회를 삭제하시겠습니까? 관련 신청 데이터도 함께 삭제됩니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
