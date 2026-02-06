@@ -221,24 +221,16 @@ const SurveyFormBuilder = ({ fields, onChange, maxFields = 20 }: SurveyFormBuild
               <>
                 <div className="space-y-1">
                   <Label className="text-xs">동의 항목 텍스트</Label>
-                  <Input
+                  <Textarea
                     placeholder="예: 개인정보 처리방침에 동의합니다"
                     value={field.consentText || ''}
                     onChange={(e) => updateField(field.id, { consentText: e.target.value, label: e.target.value })}
-                    maxLength={200}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">링크 URL (선택)</Label>
-                  <Input
-                    placeholder="https://example.com/privacy"
-                    value={field.consentLink || ''}
-                    onChange={(e) => updateField(field.id, { consentLink: e.target.value })}
                     maxLength={500}
+                    rows={3}
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  ※ 동의 항목은 항상 필수입니다. 체크해야만 제출 가능합니다.
+                  ※ 동의 항목은 항상 필수입니다. 체크해야만 제출 가능합니다. **텍스트**로 볼드 처리 가능
                 </p>
               </>
             )}
