@@ -4,7 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, GraduationCap, Phone, Calendar, User } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { ArrowLeft, GraduationCap, Phone, Calendar, User, Eye, CheckCircle, XCircle } from "lucide-react";
+import { toast } from "sonner";
 import type { SurveyField, SurveyAnswer } from "@/types/surveyField";
 
 interface Application {
@@ -16,6 +23,7 @@ interface Application {
   custom_answers: Record<string, any> | null;
   created_at: string;
   user_id: string;
+  status: string;
   profile?: {
     phone: string | null;
     user_name: string | null;
@@ -26,6 +34,7 @@ interface SeminarInfo {
   id: string;
   title: string;
   survey_fields: SurveyField[] | null;
+  confirmation_mode: string;
 }
 
 const SeminarApplicantsPage = () => {
@@ -34,19 +43,17 @@ const SeminarApplicantsPage = () => {
   const [applications, setApplications] = useState<Application[]>([]);
   const [seminar, setSeminar] = useState<SeminarInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
 
   useEffect(() => {
-    if (seminarId) {
-      fetchData();
-    }
+    if (seminarId) fetchData();
   }, [seminarId]);
 
   const fetchData = async () => {
     try {
-      // Fetch seminar info
       const { data: seminarData } = await supabase
         .from("seminars")
-        .select("id, title, survey_fields")
+        .select("id, title, survey_fields, confirmation_mode")
         .eq("id", seminarId)
         .maybeSingle();
 
@@ -57,7 +64,6 @@ const SeminarApplicantsPage = () => {
         });
       }
 
-      // Fetch applications
       const { data, error } = await supabase
         .from("seminar_applications")
         .select("*")
@@ -89,6 +95,25 @@ const SeminarApplicantsPage = () => {
     }
   };
 
+  const updateApplicationStatus = async (appId: string, status: string) => {
+    try {
+      const { error } = await supabase
+        .from("seminar_applications")
+        .update({ status } as any)
+        .eq("id", appId);
+
+      if (error) throw error;
+
+      setApplications((prev) =>
+        prev.map((a) => (a.id === appId ? { ...a, status } : a))
+      );
+      toast.success(status === "confirmed" ? "승인되었습니다" : "거절되었습니다");
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast.error("상태 변경에 실패했습니다");
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("ko-KR", {
       month: "short",
@@ -98,10 +123,121 @@ const SeminarApplicantsPage = () => {
     });
   };
 
-  const getSurveyFieldLabel = (fieldId: string): string => {
-    if (!seminar?.survey_fields) return fieldId;
-    const field = seminar.survey_fields.find((f) => f.id === fieldId);
-    return field?.label || field?.consentText || fieldId;
+  const getParentPhone = (app: Application) => {
+    return app.custom_answers?._parentPhone || app.profile?.phone || null;
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "pending":
+        return <Badge variant="secondary" className="bg-amber-100 text-amber-700 text-[10px]">대기중</Badge>;
+      case "confirmed":
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-700 text-[10px]">확정</Badge>;
+      case "rejected":
+        return <Badge variant="destructive" className="text-[10px]">거절</Badge>;
+      default:
+        return <Badge variant="outline" className="text-[10px]">{status}</Badge>;
+    }
+  };
+
+  const isManualMode = seminar?.confirmation_mode === "manual";
+
+  // Render detail sheet ordered by survey_fields
+  const renderDetailContent = (app: Application) => {
+    const surveyFields = seminar?.survey_fields || [];
+    const customAnswers = app.custom_answers || {};
+
+    return (
+      <div className="space-y-4">
+        {/* Basic info */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <User className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium">{app.student_name}</span>
+          </div>
+          {getParentPhone(app) && (
+            <div className="flex items-center gap-2">
+              <Phone className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm">{getParentPhone(app)}</span>
+            </div>
+          )}
+          {app.profile?.user_name && (
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">계정: {app.profile.user_name}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">{formatDate(app.created_at)}</span>
+          </div>
+        </div>
+
+        {/* Survey answers in form order */}
+        {surveyFields.length > 0 && (
+          <div className="space-y-3 border-t border-border pt-3">
+            {surveyFields.map((field) => {
+              if (field.type === "static_text") return null;
+              const answer = customAnswers[field.id];
+              if (!answer) return null;
+
+              const label = field.label || field.consentText || field.id;
+              const value = renderAnswerValue(answer);
+
+              return (
+                <div key={field.id} className="text-sm">
+                  <p className="text-muted-foreground text-xs font-medium mb-0.5 whitespace-pre-wrap">
+                    {label.split(/(\*\*[^*]+\*\*)/).map((part: string, i: number) =>
+                      part.startsWith("**") && part.endsWith("**")
+                        ? <strong key={i}>{part.slice(2, -2)}</strong>
+                        : part
+                    )}
+                  </p>
+                  <p className="text-foreground whitespace-pre-wrap">{value}</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Legacy message */}
+        {app.message && (
+          <div className="border-t border-border pt-3">
+            <p className="text-xs text-muted-foreground font-medium mb-0.5">메시지</p>
+            <p className="text-sm text-foreground">{app.message}</p>
+          </div>
+        )}
+
+        {/* Approve/reject in detail sheet for manual mode */}
+        {isManualMode && app.status === "pending" && (
+          <div className="flex gap-2 pt-3 border-t border-border">
+            <Button
+              size="sm"
+              className="flex-1 gap-1"
+              onClick={() => {
+                updateApplicationStatus(app.id, "confirmed");
+                setSelectedApp(null);
+              }}
+            >
+              <CheckCircle className="w-4 h-4" />
+              승인
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1 text-destructive hover:text-destructive"
+              onClick={() => {
+                updateApplicationStatus(app.id, "rejected");
+                setSelectedApp(null);
+              }}
+            >
+              <XCircle className="w-4 h-4" />
+              거절
+            </Button>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const renderAnswerValue = (value: any): string => {
@@ -148,73 +284,63 @@ const SeminarApplicantsPage = () => {
         ) : (
           <div className="space-y-3">
             {applications.map((app, index) => {
-              const parentPhone = app.custom_answers?._parentPhone;
-              const surveyAnswers = app.custom_answers
-                ? Object.entries(app.custom_answers).filter(([key]) => !key.startsWith("_"))
-                : [];
+              const phone = getParentPhone(app);
 
               return (
                 <Card key={app.id}>
                   <CardContent className="p-4">
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                          {index + 1}
+                    <div className="flex items-center gap-3">
+                      {/* Profile circle */}
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary flex-shrink-0">
+                        {index + 1}
+                      </div>
+
+                      {/* Name & phone */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-sm text-foreground truncate">{app.student_name}</p>
+                          {getStatusBadge(app.status)}
                         </div>
-                        <div>
-                          <p className="font-semibold text-sm text-foreground">{app.student_name}</p>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {formatDate(app.created_at)}
+                        {phone && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Phone className="w-3 h-3" />
+                            {phone}
                           </p>
-                        </div>
+                        )}
                       </div>
+
+                      {/* Detail button */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1 text-xs flex-shrink-0"
+                        onClick={() => setSelectedApp(app)}
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        상세
+                      </Button>
                     </div>
 
-                    {/* Contact info */}
-                    <div className="space-y-1.5 mb-3">
-                      {parentPhone && (
-                        <p className="text-sm text-foreground flex items-center gap-2">
-                          <Phone className="w-3.5 h-3.5 text-muted-foreground" />
-                          {parentPhone}
-                        </p>
-                      )}
-                      {app.profile?.phone && !parentPhone && (
-                        <p className="text-sm text-foreground flex items-center gap-2">
-                          <Phone className="w-3.5 h-3.5 text-muted-foreground" />
-                          {app.profile.phone}
-                        </p>
-                      )}
-                      {app.profile?.user_name && (
-                        <p className="text-sm text-muted-foreground flex items-center gap-2">
-                          <User className="w-3.5 h-3.5" />
-                          계정: {app.profile.user_name}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Survey answers */}
-                    {surveyAnswers.length > 0 && (
-                      <div className="space-y-2 border-t border-border pt-3">
-                        {surveyAnswers.map(([key, value], idx) => (
-                          <div key={idx} className="text-sm">
-                            <p className="text-muted-foreground text-xs font-medium mb-0.5">
-                              {getSurveyFieldLabel(key)}
-                            </p>
-                            <p className="text-foreground whitespace-pre-wrap">
-                              {renderAnswerValue(value)}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Legacy fields */}
-                    {app.message && (
-                      <div className="border-t border-border pt-3 mt-3">
-                        <p className="text-xs text-muted-foreground font-medium mb-0.5">메시지</p>
-                        <p className="text-sm text-foreground">{app.message}</p>
+                    {/* Approve/reject buttons for manual mode */}
+                    {isManualMode && app.status === "pending" && (
+                      <div className="flex gap-2 mt-3">
+                        <Button
+                          size="sm"
+                          className="flex-1 gap-1"
+                          onClick={() => updateApplicationStatus(app.id, "confirmed")}
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          승인
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1 text-destructive hover:text-destructive"
+                          onClick={() => updateApplicationStatus(app.id, "rejected")}
+                        >
+                          <XCircle className="w-4 h-4" />
+                          거절
+                        </Button>
                       </div>
                     )}
                   </CardContent>
@@ -224,6 +350,19 @@ const SeminarApplicantsPage = () => {
           </div>
         )}
       </main>
+
+      {/* Detail Sheet */}
+      <Sheet open={!!selectedApp} onOpenChange={(open) => !open && setSelectedApp(null)}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
+          <SheetHeader className="mb-4">
+            <div className="flex items-center justify-between">
+              <SheetTitle className="text-lg">신청 상세</SheetTitle>
+              {selectedApp && getStatusBadge(selectedApp.status)}
+            </div>
+          </SheetHeader>
+          {selectedApp && renderDetailContent(selectedApp)}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

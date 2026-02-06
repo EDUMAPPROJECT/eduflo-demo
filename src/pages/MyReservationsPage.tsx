@@ -242,11 +242,11 @@ const MyReservationsPage = () => {
   const openSeminarDetail = (app: SeminarApplication) => {
     // Determine display status based on confirmation_mode and application status
     const appStatus = (app as any).status || 'confirmed';
-    let seminarDisplayStatus = "applied";
+    let seminarDisplayStatus = "confirmed";
     if (appStatus === 'pending') {
-      seminarDisplayStatus = "pending_approval";
+      seminarDisplayStatus = "pending";
     } else if (appStatus === 'confirmed') {
-      seminarDisplayStatus = "applied";
+      seminarDisplayStatus = "confirmed";
     }
 
     setDetailSheet({
@@ -526,11 +526,11 @@ const MyReservationsPage = () => {
                         <div className="flex items-center gap-2">
                           {(app as any).status === 'pending' ? (
                             <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700">
-                              승인 대기
+                              대기중
                             </Badge>
                           ) : (
-                            <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
-                              신청 완료
+                            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
+                              확정
                             </Badge>
                           )}
                           <button
