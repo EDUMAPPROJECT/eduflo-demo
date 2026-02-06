@@ -81,10 +81,8 @@ const SeminarDetailPage = () => {
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   // Form state
-  const [studentName, setStudentName] = useState("");
-  const [studentGrade, setStudentGrade] = useState("");
-  const [attendeeCount, setAttendeeCount] = useState(1);
-  const [message, setMessage] = useState("");
+  const [parentName, setParentName] = useState("");
+  const [parentPhone, setParentPhone] = useState("");
   const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({});
   const surveyFormRef = useRef<{ triggerSubmit: () => void; isValid: () => boolean; getAnswers: () => Record<string, SurveyAnswer> } | null>(null);
 
@@ -191,13 +189,22 @@ const SeminarDetailPage = () => {
       surveyAnswers = surveyFormRef.current.getAnswers();
     }
 
+    if (!parentName.trim()) {
+      toast.error('학부모 이름을 입력해주세요');
+      return;
+    }
+    if (!parentPhone.trim()) {
+      toast.error('전화번호를 입력해주세요');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const { error } = await supabase.from("seminar_applications").insert({
         seminar_id: id,
         user_id: user.id,
-        student_name: user.email || '참가자',
-        custom_answers: (Object.keys(surveyAnswers).length > 0 ? surveyAnswers : (Object.keys(customAnswers).length > 0 ? customAnswers : null)) as any,
+        student_name: parentName.trim(),
+        custom_answers: (Object.keys(surveyAnswers).length > 0 ? { ...surveyAnswers, _parentPhone: parentPhone.trim() } : { _parentPhone: parentPhone.trim() }) as any,
       });
 
       if (error) throw error;
@@ -205,7 +212,7 @@ const SeminarDetailPage = () => {
       toast.success("설명회 신청이 완료되었습니다");
       setIsDialogOpen(false);
       setHasApplied(true);
-      setMyApplication({ student_name: user.email || '참가자' });
+      setMyApplication({ student_name: parentName.trim() });
       fetchApplicationCount();
     } catch (error) {
       logError("apply-seminar", error);
@@ -216,10 +223,8 @@ const SeminarDetailPage = () => {
   };
 
   const resetForm = () => {
-    setStudentName("");
-    setStudentGrade("");
-    setAttendeeCount(1);
-    setMessage("");
+    setParentName("");
+    setParentPhone("");
     setCustomAnswers({});
   };
 
@@ -593,6 +598,29 @@ const SeminarDetailPage = () => {
             <DialogTitle className="text-lg">설명회 참가 신청</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4 overflow-y-auto flex-1 min-h-0 pr-1">
+            {/* Default fields: parent name & phone */}
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label className="text-sm font-medium">학부모 이름 <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="이름을 입력하세요"
+                  value={parentName}
+                  onChange={(e) => setParentName(e.target.value)}
+                  maxLength={50}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm font-medium">전화번호 <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="전화번호를 입력하세요"
+                  value={parentPhone}
+                  onChange={(e) => setParentPhone(e.target.value)}
+                  maxLength={20}
+                  type="tel"
+                />
+              </div>
+            </div>
+
             {/* Survey Fields from Seminar */}
             {(() => {
               const surveyFields: SurveyField[] = (seminar as any).survey_fields || [];
