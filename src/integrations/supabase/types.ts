@@ -976,6 +976,8 @@ export type Database = {
           academy_id: string | null
           author_id: string | null
           capacity: number | null
+          completion_message: string | null
+          confirmation_mode: string
           created_at: string
           custom_questions: string[] | null
           date: string
@@ -994,6 +996,8 @@ export type Database = {
           academy_id?: string | null
           author_id?: string | null
           capacity?: number | null
+          completion_message?: string | null
+          confirmation_mode?: string
           created_at?: string
           custom_questions?: string[] | null
           date: string
@@ -1012,6 +1016,8 @@ export type Database = {
           academy_id?: string | null
           author_id?: string | null
           capacity?: number | null
+          completion_message?: string | null
+          confirmation_mode?: string
           created_at?: string
           custom_questions?: string[] | null
           date?: string

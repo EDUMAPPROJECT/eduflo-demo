@@ -220,7 +220,7 @@ const SurveyFormRenderer = ({ fields, onSubmit, submitting, renderOnly, formRef 
                       className="mt-0.5"
                     />
                     <div className="flex-1">
-                    <span className="text-sm">
+                    <span className="text-sm whitespace-pre-wrap">
                         {(field.consentText || field.label).split(/(\*\*[^*]+\*\*)/).map((part, i) =>
                           part.startsWith('**') && part.endsWith('**')
                             ? <strong key={i}>{part.slice(2, -2)}</strong>
@@ -228,17 +228,6 @@ const SurveyFormRenderer = ({ fields, onSubmit, submitting, renderOnly, formRef 
                         )}
                         <span className="text-destructive ml-1">*</span>
                       </span>
-                      {field.consentLink && (
-                        <a
-                          href={field.consentLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block text-xs text-primary underline mt-1"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          자세히 보기
-                        </a>
-                      )}
                     </div>
                   </label>
                 )}
