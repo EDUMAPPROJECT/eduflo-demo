@@ -210,12 +210,6 @@ const StudentHomePage = () => {
           <AnnouncementBanner />
         </section>
 
-        {/* Learning Style Banner */}
-        {!checkingProfile && !learningStyle && profileTags.length === 0 && (
-          <section className="mb-6 px-4">
-            <LearningStyleBanner />
-          </section>
-        )}
 
         {/* Greeting */}
         <section className="mb-6 bg-primary/10 mx-4 rounded-xl p-4">

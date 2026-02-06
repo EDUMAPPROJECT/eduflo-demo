@@ -5,7 +5,7 @@ import { useRegion } from "@/contexts/RegionContext";
 import BottomNavigation from "@/components/BottomNavigation";
 import Logo from "@/components/Logo";
 import QuickActionMenu from "@/components/QuickActionMenu";
-import LearningStyleBanner from "@/components/LearningStyleBanner";
+
 import GlobalRegionSelector from "@/components/GlobalRegionSelector";
 import SeminarCarousel from "@/components/SeminarCarousel";
 import EmptyRegionState from "@/components/EmptyRegionState";
@@ -13,7 +13,7 @@ import AcademyNewsFeed from "@/components/AcademyNewsFeed";
 import PostDetailDialog from "@/components/PostDetailDialog";
 import AdminHeader from "@/components/AdminHeader";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
-import RecommendedAcademies from "@/components/RecommendedAcademies";
+
 import TodayScheduleSection from "@/components/TodayScheduleSection";
 
 interface Seminar {
@@ -51,7 +51,6 @@ const HomePage = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loadingSeminars, setLoadingSeminars] = useState(true);
   const [loadingPosts, setLoadingPosts] = useState(true);
-  const [learningStyle, setLearningStyle] = useState<string | null>(null);
   const [profileTags, setProfileTags] = useState<string[]>([]);
   const [userName, setUserName] = useState<string | null>(null);
   const [checkingProfile, setCheckingProfile] = useState(true);
@@ -184,9 +183,6 @@ const HomePage = () => {
             .eq("id", user.id)
             .maybeSingle();
           
-          if (profile?.learning_style) {
-            setLearningStyle(profile.learning_style);
-          }
           if (profile?.user_name) {
             setUserName(profile.user_name);
           }
@@ -248,14 +244,6 @@ const HomePage = () => {
         {/* Today's Schedule Section */}
         <section className="mb-6 px-4">
           <TodayScheduleSection />
-        </section>
-
-        {/* Tag-based Recommended Academies Section */}
-        <section className="mb-6 px-4">
-          <RecommendedAcademies 
-            profileTags={profileTags}
-            childName={userName || undefined}
-          />
         </section>
 
         {/* Empty State for Region */}

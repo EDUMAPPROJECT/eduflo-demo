@@ -170,7 +170,7 @@ const SeminarDetailPage = () => {
 
   const handleApply = async () => {
     if (!user) {
-      toast.error("로그인이 필요합니다");
+      toast.error("로그인이 필요합니다. 로그인 페이지로 이동합니다.");
       navigate("/auth");
       return;
     }
@@ -549,7 +549,14 @@ const SeminarDetailPage = () => {
               className="w-full h-14 text-base font-semibold"
               size="xl"
               disabled={seminar.status === "closed" || remainingSpots <= 0}
-              onClick={() => setIsDialogOpen(true)}
+              onClick={() => {
+                if (!user) {
+                  toast.error("로그인이 필요합니다. 로그인 페이지로 이동합니다.");
+                  navigate("/auth");
+                  return;
+                }
+                setIsDialogOpen(true);
+              }}
             >
               {seminar.status === "closed" || remainingSpots <= 0
                 ? "모집 마감"
