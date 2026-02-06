@@ -608,14 +608,6 @@ const SuperAdminSeminarPage = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>위치 상세</Label>
-              <Input
-                placeholder="예) 3층 성심홀"
-                value={locationDetail}
-                onChange={(e) => setLocationDetail(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
               <Label>도로명주소</Label>
               <AddressSearch
                 value={locationAddress}
@@ -693,6 +685,9 @@ const SuperAdminSeminarPage = () => {
 
             {/* Survey Fields Section */}
             <div className="pt-2 border-t border-border">
+              <p className="text-xs text-muted-foreground mb-2">
+                설문 질문에도 **텍스트**로 볼드체를 적용할 수 있습니다.
+              </p>
               <SurveyFormBuilder
                 fields={surveyFields}
                 onChange={setSurveyFields}

@@ -126,7 +126,11 @@ const SurveyFormRenderer = ({ fields, onSubmit, submitting, renderOnly, formRef 
           {field.type === 'text' && (
             <>
               <Label className="text-sm whitespace-pre-wrap">
-                {field.label}
+                {field.label.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
+                  part.startsWith('**') && part.endsWith('**')
+                    ? <strong key={i}>{part.slice(2, -2)}</strong>
+                    : part
+                )}
                 {field.required && <span className="text-destructive ml-1">*</span>}
               </Label>
               <Controller
@@ -152,7 +156,11 @@ const SurveyFormRenderer = ({ fields, onSubmit, submitting, renderOnly, formRef 
           {field.type === 'multiple_choice' && (
             <>
               <Label className="text-sm whitespace-pre-wrap">
-                {field.label}
+                {field.label.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
+                  part.startsWith('**') && part.endsWith('**')
+                    ? <strong key={i}>{part.slice(2, -2)}</strong>
+                    : part
+                )}
                 {field.required && <span className="text-destructive ml-1">*</span>}
               </Label>
               <p className="text-xs text-muted-foreground">복수 선택 가능</p>
@@ -207,8 +215,12 @@ const SurveyFormRenderer = ({ fields, onSubmit, submitting, renderOnly, formRef 
                       className="mt-0.5"
                     />
                     <div className="flex-1">
-                      <span className="text-sm">
-                        {field.consentText || field.label}
+                    <span className="text-sm">
+                        {(field.consentText || field.label).split(/(\*\*[^*]+\*\*)/).map((part, i) =>
+                          part.startsWith('**') && part.endsWith('**')
+                            ? <strong key={i}>{part.slice(2, -2)}</strong>
+                            : part
+                        )}
                         <span className="text-destructive ml-1">*</span>
                       </span>
                       {field.consentLink && (

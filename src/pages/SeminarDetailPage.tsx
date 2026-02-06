@@ -179,25 +179,10 @@ const SeminarDetailPage = () => {
       return;
     }
 
-    // Validate input
-    const validation = validateInput(seminarApplicationSchema, {
-      student_name: studentName,
-      student_grade: studentGrade || null,
-      message: message || null,
-      attendee_count: attendeeCount,
-    });
-
-    if (!validation.success) {
-      toast.error((validation as { success: false; error: string }).error);
-      return;
-    }
-
-    const validatedData = (validation as { success: true; data: { student_name: string; student_grade?: string | null; message?: string | null; attendee_count: number } }).data;
     // Collect survey answers
-    const surveyFields: SurveyField[] = (seminar as any).survey_fields || [];
+    const surveyFieldsList: SurveyField[] = (seminar as any).survey_fields || [];
     let surveyAnswers: Record<string, SurveyAnswer> = {};
-    if (surveyFields.length > 0 && surveyFormRef.current) {
-      // Trigger survey form validation
+    if (surveyFieldsList.length > 0 && surveyFormRef.current) {
       const isValid = surveyFormRef.current.isValid();
       if (!isValid) {
         toast.error('설문 항목을 모두 확인해주세요');
@@ -211,10 +196,7 @@ const SeminarDetailPage = () => {
       const { error } = await supabase.from("seminar_applications").insert({
         seminar_id: id,
         user_id: user.id,
-        student_name: validatedData.student_name,
-        student_grade: validatedData.student_grade,
-        attendee_count: validatedData.attendee_count,
-        message: validatedData.message,
+        student_name: user.email || '참가자',
         custom_answers: (Object.keys(surveyAnswers).length > 0 ? surveyAnswers : (Object.keys(customAnswers).length > 0 ? customAnswers : null)) as any,
       });
 
@@ -223,12 +205,7 @@ const SeminarDetailPage = () => {
       toast.success("설명회 신청이 완료되었습니다");
       setIsDialogOpen(false);
       setHasApplied(true);
-      setMyApplication({
-        student_name: studentName,
-        student_grade: studentGrade,
-        attendee_count: attendeeCount,
-      });
-      resetForm();
+      setMyApplication({ student_name: user.email || '참가자' });
       fetchApplicationCount();
     } catch (error) {
       logError("apply-seminar", error);
@@ -509,10 +486,9 @@ const SeminarDetailPage = () => {
                   <MapPin className="w-5 h-5" />
                   <span className="text-xs font-semibold">장소</span>
                 </div>
-                {locName || locDetail || locAddress ? (
+                {locName || locAddress ? (
                   <div className="space-y-1">
                     {locName && <p className="text-sm font-bold text-foreground">{locName}</p>}
-                    {locDetail && <p className="text-sm text-muted-foreground">{locDetail}</p>}
                     {locAddress && <p className="text-xs text-muted-foreground">{locAddress}</p>}
                   </div>
                 ) : (
@@ -617,66 +593,12 @@ const SeminarDetailPage = () => {
             <DialogTitle className="text-lg">설명회 참가 신청</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4 overflow-y-auto flex-1 min-h-0 pr-1">
-            <div className="space-y-2">
-              <Label htmlFor="studentName">학생 이름 *</Label>
-              <Input
-                id="studentName"
-                placeholder="학생 이름을 입력하세요"
-                value={studentName}
-                onChange={(e) => setStudentName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="studentGrade">학년 *</Label>
-              <Select value={studentGrade} onValueChange={setStudentGrade}>
-                <SelectTrigger>
-                  <SelectValue placeholder="학년을 선택하세요" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="초등 1학년">초등 1학년</SelectItem>
-                  <SelectItem value="초등 2학년">초등 2학년</SelectItem>
-                  <SelectItem value="초등 3학년">초등 3학년</SelectItem>
-                  <SelectItem value="초등 4학년">초등 4학년</SelectItem>
-                  <SelectItem value="초등 5학년">초등 5학년</SelectItem>
-                  <SelectItem value="초등 6학년">초등 6학년</SelectItem>
-                  <SelectItem value="중학교 1학년">중학교 1학년</SelectItem>
-                  <SelectItem value="중학교 2학년">중학교 2학년</SelectItem>
-                  <SelectItem value="중학교 3학년">중학교 3학년</SelectItem>
-                  <SelectItem value="고등학교 1학년">고등학교 1학년</SelectItem>
-                  <SelectItem value="고등학교 2학년">고등학교 2학년</SelectItem>
-                  <SelectItem value="고등학교 3학년">고등학교 3학년</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="attendeeCount">참석 인원</Label>
-              <Input
-                id="attendeeCount"
-                type="number"
-                min={1}
-                max={5}
-                value={attendeeCount}
-                onChange={(e) => setAttendeeCount(Number(e.target.value))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="message">질문 사항 (선택)</Label>
-              <Textarea
-                id="message"
-                placeholder="설명회에서 듣고 싶은 내용이 있으시면 적어주세요"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                rows={3}
-              />
-            </div>
-
             {/* Survey Fields from Seminar */}
             {(() => {
               const surveyFields: SurveyField[] = (seminar as any).survey_fields || [];
               if (surveyFields.length === 0) return null;
               return (
-                <div className="pt-3 border-t border-border space-y-2">
-                  <p className="text-sm font-medium text-foreground">추가 설문</p>
+                <div className="space-y-2">
                   <SurveyFormRenderer
                     fields={surveyFields}
                     onSubmit={() => {}}
@@ -689,7 +611,7 @@ const SeminarDetailPage = () => {
 
             {/* Legacy custom questions fallback */}
             {seminar.custom_questions && seminar.custom_questions.length > 0 && !((seminar as any).survey_fields?.length > 0) && (
-              <div className="space-y-3 pt-3 border-t border-border">
+              <div className="space-y-3">
                 <p className="text-sm font-medium text-foreground">추가 질문</p>
                 {seminar.custom_questions.map((question, index) => (
                   <div key={index} className="space-y-1">
