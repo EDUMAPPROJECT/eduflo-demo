@@ -140,7 +140,7 @@ const SeminarApplicantsPage = () => {
     }
   };
 
-  const isManualMode = seminar?.confirmation_mode === "manual";
+  // All seminars now use approval mode (no more auto-confirm)
 
   // Render detail sheet ordered by survey_fields
   const renderDetailContent = (app: Application) => {
@@ -208,8 +208,8 @@ const SeminarApplicantsPage = () => {
           </div>
         )}
 
-        {/* Approve/reject in detail sheet for manual mode */}
-        {isManualMode && app.status === "pending" && (
+        {/* Approve/reject in detail sheet */}
+        {app.status === "pending" && (
           <div className="flex gap-2 pt-3 border-t border-border">
             <Button
               size="sm"
@@ -321,8 +321,8 @@ const SeminarApplicantsPage = () => {
                       </Button>
                     </div>
 
-                    {/* Approve/reject buttons for manual mode */}
-                    {isManualMode && app.status === "pending" && (
+                    {/* Approve/reject buttons */}
+                    {app.status === "pending" && (
                       <div className="flex gap-2 mt-3">
                         <Button
                           size="sm"
