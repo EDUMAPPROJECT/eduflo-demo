@@ -457,25 +457,25 @@ const MyReservationsPage = () => {
                     onClick={() => openReservationDetail(reservation)}
                   >
                     <CardContent className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Calendar className="w-4 h-4 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-foreground text-sm line-clamp-1">
-                            {reservation.academy?.name || "학원"}
-                          </h4>
-                          <p className="text-xs text-muted-foreground">
-                            {reservation.student_name} · {reservation.student_grade || "학년 미정"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm text-primary font-medium">
-                          <Clock className="w-4 h-4" />
-                          <span>{formatReservationDate(reservation.reservation_date, reservation.reservation_time)}</span>
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Calendar className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-foreground text-sm line-clamp-1">
+                              {reservation.academy?.name || "학원"}
+                            </h4>
+                            <p className="text-xs text-muted-foreground">
+                              {reservation.student_name} · {reservation.student_grade || "학년 미정"}
+                            </p>
+                          </div>
                         </div>
                         {getStatusBadge(reservation.status)}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-primary font-medium">
+                        <Clock className="w-4 h-4" />
+                        <span>{formatReservationDate(reservation.reservation_date, reservation.reservation_time)}</span>
                       </div>
                     </CardContent>
                   </Card>
@@ -489,46 +489,46 @@ const MyReservationsPage = () => {
                     onClick={() => openSeminarDetail(app)}
                   >
                     <CardContent className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                          <GraduationCap className="w-4 h-4 text-accent" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-foreground text-sm line-clamp-1">
-                            {app.seminar?.title || "설명회"}
-                          </h4>
-                          <p className="text-xs text-muted-foreground">
-                            {app.seminar?.academy?.name} · {app.student_name}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-end justify-between">
-                        <div>
-                          {app.seminar?.date && (
-                            <div className="flex items-center gap-2 text-sm text-accent font-medium">
-                              <Clock className="w-4 h-4" />
-                              <span>{formatSeminarDateTime(app.seminar.date)}</span>
-                            </div>
-                          )}
-                          {app.seminar?.location && (() => {
-                            let locDisplay = app.seminar.location;
-                            try {
-                              const parsed = JSON.parse(app.seminar.location);
-                              locDisplay = parsed.name || parsed.address || app.seminar.location;
-                            } catch {}
-                            return (
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                                <MapPin className="w-3 h-3" />
-                                <span className="line-clamp-1">{locDisplay}</span>
-                              </div>
-                            );
-                          })()}
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                            <GraduationCap className="w-4 h-4 text-accent" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-foreground text-sm line-clamp-1">
+                              {app.seminar?.title || "설명회"}
+                            </h4>
+                            <p className="text-xs text-muted-foreground">
+                              {app.seminar?.academy?.name} · {app.student_name}
+                            </p>
+                          </div>
                         </div>
                         {(app as any).status === 'pending' ? (
-                          <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700">대기중</Badge>
+                          <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 shrink-0">대기중</Badge>
                         ) : (
-                          <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">확정</Badge>
+                          <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 shrink-0">확정</Badge>
                         )}
+                      </div>
+                      <div>
+                        {app.seminar?.date && (
+                          <div className="flex items-center gap-2 text-sm text-accent font-medium">
+                            <Clock className="w-4 h-4" />
+                            <span>{formatSeminarDateTime(app.seminar.date)}</span>
+                          </div>
+                        )}
+                        {app.seminar?.location && (() => {
+                          let locDisplay = app.seminar.location;
+                          try {
+                            const parsed = JSON.parse(app.seminar.location);
+                            locDisplay = parsed.name || parsed.address || app.seminar.location;
+                          } catch {}
+                          return (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                              <MapPin className="w-3 h-3" />
+                              <span className="line-clamp-1">{locDisplay}</span>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </CardContent>
                   </Card>
@@ -658,25 +658,25 @@ const MyReservationsPage = () => {
                     onClick={() => openReservationDetail(reservation)}
                   >
                     <CardContent className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Calendar className="w-4 h-4 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-foreground text-sm line-clamp-1">
-                            {reservation.academy?.name || "학원"}
-                          </h4>
-                          <p className="text-xs text-muted-foreground">
-                            {reservation.student_name} · {reservation.student_grade || "학년 미정"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2 text-sm text-primary font-medium">
-                          <Clock className="w-4 h-4" />
-                          <span>{formatReservationDate(reservation.reservation_date, reservation.reservation_time)}</span>
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Calendar className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-foreground text-sm line-clamp-1">
+                              {reservation.academy?.name || "학원"}
+                            </h4>
+                            <p className="text-xs text-muted-foreground">
+                              {reservation.student_name} · {reservation.student_grade || "학년 미정"}
+                            </p>
+                          </div>
                         </div>
                         {getStatusBadge(reservation.status)}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-primary font-medium mb-2">
+                        <Clock className="w-4 h-4" />
+                        <span>{formatReservationDate(reservation.reservation_date, reservation.reservation_time)}</span>
                       </div>
                       {reservation.message && (
                         <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 line-clamp-2">
@@ -719,51 +719,51 @@ const MyReservationsPage = () => {
                     onClick={() => openSeminarDetail(app)}
                   >
                     <CardContent className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <GraduationCap className="w-4 h-4 text-primary" />
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <GraduationCap className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-foreground text-sm line-clamp-1">
+                              {app.seminar?.title || "설명회"}
+                            </h4>
+                            <p className="text-xs text-muted-foreground">
+                              {app.student_name} · {app.attendee_count || 1}명
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-foreground text-sm line-clamp-1">
-                            {app.seminar?.title || "설명회"}
-                          </h4>
-                          <p className="text-xs text-muted-foreground">
-                            {app.student_name} · {app.attendee_count || 1}명
-                          </p>
-                        </div>
+                        {(app as any).status === 'pending' ? (
+                          <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 shrink-0">대기중</Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 shrink-0">확정</Badge>
+                        )}
                       </div>
                       {app.seminar?.academy && (
                         <p className="text-xs text-muted-foreground mb-1">
                           {app.seminar.academy.name}
                         </p>
                       )}
-                      <div className="flex items-end justify-between">
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                          {app.seminar?.date && (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              <span>{formatDate(app.seminar.date)}</span>
-                            </div>
-                          )}
-                          {app.seminar?.location && (() => {
-                            let locDisplay = app.seminar.location;
-                            try {
-                              const parsed = JSON.parse(app.seminar.location);
-                              locDisplay = parsed.name || parsed.address || app.seminar.location;
-                            } catch {}
-                            return (
-                              <div className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3" />
-                                <span className="line-clamp-1">{locDisplay}</span>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                        {(app as any).status === 'pending' ? (
-                          <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700">대기중</Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">확정</Badge>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        {app.seminar?.date && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            <span>{formatDate(app.seminar.date)}</span>
+                          </div>
                         )}
+                        {app.seminar?.location && (() => {
+                          let locDisplay = app.seminar.location;
+                          try {
+                            const parsed = JSON.parse(app.seminar.location);
+                            locDisplay = parsed.name || parsed.address || app.seminar.location;
+                          } catch {}
+                          return (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              <span className="line-clamp-1">{locDisplay}</span>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </CardContent>
                   </Card>

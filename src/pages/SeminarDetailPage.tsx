@@ -202,9 +202,8 @@ const SeminarDetailPage = () => {
 
     setSubmitting(true);
     try {
-      // Determine status based on confirmation_mode
-      const confirmationMode = (seminar as any).confirmation_mode || 'auto';
-      const applicationStatus = confirmationMode === 'manual' ? 'pending' : 'confirmed';
+      // All seminar applications start as pending (requires admin approval)
+      const applicationStatus = 'pending';
 
       const { error } = await supabase.from("seminar_applications").insert({
         seminar_id: id,

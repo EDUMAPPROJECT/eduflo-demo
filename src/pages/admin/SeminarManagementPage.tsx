@@ -275,7 +275,7 @@ const SeminarManagementPage = () => {
         target_grade: targetGrade || null,
         image_url: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
         survey_fields: (validFields.length > 0 ? validFields : null) as any,
-        confirmation_mode: confirmationMode,
+        confirmation_mode: "manual",
         completion_message: completionMessage.trim() || null,
       };
 
@@ -611,33 +611,6 @@ const SeminarManagementPage = () => {
               />
             </div>
 
-            {/* Confirmation Mode */}
-            <div className="space-y-2">
-              <Label>신청 확정 방식</Label>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant={confirmationMode === "auto" ? "default" : "outline"}
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => setConfirmationMode("auto")}
-                >
-                  확정
-                </Button>
-                <Button
-                  type="button"
-                  variant={confirmationMode === "approval" ? "default" : "outline"}
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => setConfirmationMode("approval")}
-                >
-                  승인 필요
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {confirmationMode === "auto" ? "신청 즉시 확정됩니다" : "관리자 승인 후 확정됩니다"}
-              </p>
-            </div>
 
             <div className="space-y-2">
               <Label>설명회 안내</Label>
