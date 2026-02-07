@@ -18,4 +18,11 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const firebaseAuth = getAuth(app);
+
+// 개발 시에만 reCAPTCHA 검증 비활성화 (테스트 전화번호 사용 시). 프로덕션에서는 사용 금지.
+if (import.meta.env.DEV && import.meta.env.VITE_FIREBASE_APP_VERIFICATION_DISABLED === "true") {
+  (firebaseAuth as unknown as { settings: { appVerificationDisabledForTesting?: boolean } }).settings ??= {};
+  (firebaseAuth as unknown as { settings: { appVerificationDisabledForTesting?: boolean } }).settings.appVerificationDisabledForTesting = true;
+}
+
 export { app };

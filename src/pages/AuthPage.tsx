@@ -29,6 +29,7 @@ const AuthPage = () => {
   const [loginPhone, setLoginPhone] = useState("");
   const [loginShowVerification, setLoginShowVerification] = useState(false);
   const [loginVerificationCode, setLoginVerificationCode] = useState("");
+  const [verificationSecondsLeft, setVerificationSecondsLeft] = useState(0); // 5분 = 300초
   const confirmationResultRef = useRef<ConfirmationResult | null>(null);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
   const [recaptchaKey, setRecaptchaKey] = useState(0);
@@ -41,6 +42,7 @@ const AuthPage = () => {
   const resetVerificationState = () => {
     setLoginShowVerification(false);
     setLoginVerificationCode("");
+    setVerificationSecondsLeft(0);
     confirmationResultRef.current = null;
   };
 
@@ -191,6 +193,7 @@ const AuthPage = () => {
         if (cancelled) return;
         confirmationResultRef.current = result;
         setLoginShowVerification(true);
+        setVerificationSecondsLeft(300); // 5분
         toast.success("인증번호가 발송되었습니다. SMS를 확인해주세요.");
       } catch (error: unknown) {
         if (cancelled) return;
@@ -205,6 +208,32 @@ const AuthPage = () => {
       cancelled = true;
     };
   }, [recaptchaKey]);
+
+  // 5분 입력 제한 타이머
+  useEffect(() => {
+    if (!loginShowVerification || verificationSecondsLeft <= 0) return;
+    const interval = setInterval(() => {
+      setVerificationSecondsLeft((s) => (s > 0 ? s - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [loginShowVerification, verificationSecondsLeft]);
+
+  const handleResendCode = () => {
+    if (loading) return;
+    if (!loginPhone.trim()) {
+      toast.error("휴대폰 번호를 확인해주세요");
+      return;
+    }
+    setLoading(true);
+    pendingPhoneRef.current = loginPhone.trim();
+    setRecaptchaKey((k) => k + 1);
+  };
+
+  const formatTimeLeft = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+  };
 
   const handleLoginConfirm = async () => {
     const confirmation = confirmationResultRef.current;
@@ -421,17 +450,36 @@ const AuthPage = () => {
                 />
               </div>
               {loginShowVerification && (
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="SMS 인증 코드"
-                    value={loginVerificationCode}
-                    onChange={(e) => setLoginVerificationCode(e.target.value)}
-                    className="pl-12 h-14 text-lg"
-                  />
-                </div>
+                <>
+                  <div className="space-y-1">
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="SMS 인증 코드"
+                        value={loginVerificationCode}
+                        onChange={(e) => setLoginVerificationCode(e.target.value)}
+                        className="pl-12 pr-14 h-14 text-lg"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground tabular-nums">
+                        {formatTimeLeft(verificationSecondsLeft)}
+                      </span>
+                    </div>
+                    <div className="text-center pt-1">
+                      <button
+                        type="button"
+                        onClick={handleResendCode}
+                        disabled={loading}
+                        className="text-sm text-primary font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
+                      >
+                        {verificationSecondsLeft > 0
+                          ? "인증번호가 오지 않나요?"
+                          : "인증번호 다시 받기"}
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
 
               {!loginShowVerification ? (
