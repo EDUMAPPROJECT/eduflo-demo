@@ -192,20 +192,11 @@ const AuthPage = () => {
     pendingPhoneRef.current = null;
     const digits = getDigitsOnly(phone);
     const phoneNum = digits.startsWith("82") ? `+${digits}` : `+82${digits.replace(/^0/, "")}`;
-    // invisible reCAPTCHA는 Firebase 권장대로 '인증번호 받기' 버튼에 바인딩 (도메인 검증 시 필요)
-    const buttonEl = document.getElementById("firebase-phone-auth-button") ?? container;
-    if (recaptchaVerifierRef.current) {
-      try {
-        recaptchaVerifierRef.current.clear();
-      } catch {
-        // ignore
-      }
-      recaptchaVerifierRef.current = null;
-    }
+    // key={recaptchaKey}로 매 요청마다 새 div가 마운트되므로, 항상 컨테이너에만 그리면 "already rendered" 방지
     let cancelled = false;
     (async () => {
       try {
-        const verifier = new RecaptchaVerifier(firebaseAuth, buttonEl, {
+        const verifier = new RecaptchaVerifier(firebaseAuth, container, {
           size: "invisible",
         });
         recaptchaVerifierRef.current = verifier;
