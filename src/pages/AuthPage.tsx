@@ -32,6 +32,7 @@ const AuthPage = () => {
   const [verificationSecondsLeft, setVerificationSecondsLeft] = useState(0); // 5분 = 300초
   const confirmationResultRef = useRef<ConfirmationResult | null>(null);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
+  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
   const [recaptchaKey, setRecaptchaKey] = useState(0);
   const pendingPhoneRef = useRef<string | null>(null);
   const [signupName, setSignupName] = useState(""); // 회원가입 실명
@@ -45,6 +46,14 @@ const AuthPage = () => {
     setLoginVerificationCode("");
     setVerificationSecondsLeft(0);
     confirmationResultRef.current = null;
+    if (recaptchaVerifierRef.current) {
+      try {
+        recaptchaVerifierRef.current.clear();
+      } catch {
+        // ignore
+      }
+      recaptchaVerifierRef.current = null;
+    }
   };
 
   const resetEmailState = () => {
@@ -185,12 +194,21 @@ const AuthPage = () => {
     const phoneNum = digits.startsWith("82") ? `+${digits}` : `+82${digits.replace(/^0/, "")}`;
     // invisible reCAPTCHA는 Firebase 권장대로 '인증번호 받기' 버튼에 바인딩 (도메인 검증 시 필요)
     const buttonEl = document.getElementById("firebase-phone-auth-button") ?? container;
+    if (recaptchaVerifierRef.current) {
+      try {
+        recaptchaVerifierRef.current.clear();
+      } catch {
+        // ignore
+      }
+      recaptchaVerifierRef.current = null;
+    }
     let cancelled = false;
     (async () => {
       try {
         const verifier = new RecaptchaVerifier(firebaseAuth, buttonEl, {
           size: "invisible",
         });
+        recaptchaVerifierRef.current = verifier;
         if (cancelled) return;
         const result = await signInWithPhoneNumber(firebaseAuth, phoneNum, verifier);
         if (cancelled) return;
