@@ -205,6 +205,10 @@ const AuthPage = () => {
         const msg = error && typeof error === "object" && "message" in error ? String((error as { message: string }).message) : "인증번호 발송에 실패했습니다";
         if (code === "auth/invalid-app-credential") {
           toast.error("앱 인증에 실패했습니다. 배포된 주소에서 시도하거나, Firebase 콘솔에서 허용 도메인을 확인해주세요.");
+        } else if (code === "auth/captcha-check-failed") {
+          toast.error("이 주소는 휴대폰 인증에 등록되어 있지 않습니다. Firebase 콘솔 → Authentication → 허용된 도메인에 현재 주소를 추가해 주세요.");
+        } else if (code === "auth/too-many-requests") {
+          toast.error("요청이 너무 많습니다. 잠시 후(몇 분~몇 시간) 다시 시도해 주세요.");
         } else {
           toast.error(msg);
         }
