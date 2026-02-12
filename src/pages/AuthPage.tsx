@@ -15,10 +15,30 @@ import { supabase } from "@/integrations/supabase/client";
 type AuthStep = "login" | "signup";
 type AuthMode = "phone" | "email";
 
+/** Firebase 전화 인증이 이 호스트에서 허용되는지. localhost/127.0.0.1은 Firebase에서 불가. */
+function isPhoneAuthAllowedHost(): boolean {
+  if (typeof window === "undefined") return true;
+  const h = window.location.hostname.toLowerCase();
+  return h !== "localhost" && h !== "127.0.0.1";
+}
+
+/** 로그인/회원가입 후 redirect 쿼리가 없을 때 이동할 기본 경로 (세미나 상세) */
+const DEFAULT_POST_AUTH_PATH = "/p/seminar/c5e20751-4ef1-4a24-a254-924bed6412aa";
+
+/** redirect 쿼리에서 안전한 경로만 반환 (오픈 리다이렉트 방지) */
+function getSafeRedirect(searchParams: URLSearchParams): string | null {
+  const redirect = searchParams.get("redirect");
+  if (!redirect || typeof redirect !== "string") return null;
+  const path = redirect.trim();
+  if (path === "" || !path.startsWith("/") || path.includes("//")) return null;
+  return path;
+}
+
 const AuthPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialMode = searchParams.get("mode") === "email" ? "email" : "phone";
+  const redirectAfterAuth = getSafeRedirect(searchParams);
   
   const [authMode, setAuthMode] = useState<AuthMode>(initialMode);
   const [step, setStep] = useState<AuthStep>("login");
@@ -135,6 +155,7 @@ const AuthPage = () => {
 
   // Navigate based on server-side role from database
   const navigateByDatabaseRole = async (userId: string) => {
+    const target = redirectAfterAuth ?? DEFAULT_POST_AUTH_PATH;
     try {
       const { data: roleData, error } = await supabase
         .from('user_roles')
@@ -144,13 +165,13 @@ const AuthPage = () => {
       
       if (error) {
         logError('role-fetch', error);
-        navigate("/p/home");
+        navigate(target);
         return;
       }
       
       // If no role found, default to parent
       if (!roleData) {
-        navigate("/p/home");
+        navigate(target);
         return;
       }
       
@@ -160,13 +181,13 @@ const AuthPage = () => {
       } else if (roleData.role === "admin") {
         navigate("/admin/home");
       } else if (roleData.role === "student") {
-        navigate("/s/home");
+        navigate(target);
       } else {
-        navigate("/p/home");
+        navigate(target);
       }
     } catch (error) {
       logError('navigate-by-role', error);
-      navigate("/p/home");
+      navigate(target);
     }
   };
 
@@ -174,6 +195,10 @@ const AuthPage = () => {
   const handleLoginRequestCode = () => {
     if (!loginPhone.trim()) {
       toast.error("휴대폰 번호를 입력해주세요");
+      return;
+    }
+    if (!isPhoneAuthAllowedHost()) {
+      toast.error("휴대폰 인증은 배포된 주소에서만 가능합니다. localhost에서는 이메일 로그인을 이용해 주세요.");
       return;
     }
     setLoading(true);
@@ -213,7 +238,7 @@ const AuthPage = () => {
         const code = error && typeof error === "object" && "code" in error ? String((error as { code: string }).code) : "";
         const msg = error && typeof error === "object" && "message" in error ? String((error as { message: string }).message) : "인증번호 발송에 실패했습니다";
         if (code === "auth/invalid-app-credential") {
-          toast.error("앱 인증에 실패했습니다. 배포된 주소에서 시도하거나, Firebase 콘솔에서 허용 도메인을 확인해주세요.");
+          toast.error("앱 인증에 실패했습니다. 잠시 후 다시 시도해주세요.");
         } else if (code === "auth/captcha-check-failed") {
           toast.error("이 주소는 휴대폰 인증에 등록되어 있지 않습니다. Firebase 콘솔 → Authentication → 허용된 도메인에 현재 주소를 추가해 주세요.");
         } else if (code === "auth/too-many-requests") {
@@ -285,10 +310,10 @@ const AuthPage = () => {
         if (data?.session?.user?.id) {
           await navigateByDatabaseRole(data.session.user.id);
         } else {
-          navigate("/p/home");
+          navigate(redirectAfterAuth ?? "/p/home");
         }
       } else {
-        navigate("/p/home");
+        navigate(redirectAfterAuth ?? "/p/home");
       }
       toast.success("로그인되었습니다");
     } catch (error: unknown) {
@@ -334,10 +359,10 @@ const AuthPage = () => {
         if (data?.session?.user?.id) {
           await navigateByDatabaseRole(data.session.user.id);
         } else {
-          navigate("/p/home");
+          navigate(redirectAfterAuth ?? "/p/home");
         }
       } else {
-        navigate("/p/home");
+        navigate(redirectAfterAuth ?? "/p/home");
       }
       toast.success("회원가입이 완료되었습니다");
     } catch (error: unknown) {

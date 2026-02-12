@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import type { SurveyField, SurveyAnswer } from "@/types/surveyField";
 import { supabase } from "@/integrations/supabase/client";
 import Logo from "@/components/Logo";
@@ -69,6 +69,7 @@ interface Seminar {
 const SeminarDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [seminar, setSeminar] = useState<Seminar | null>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -718,7 +719,7 @@ const SeminarDetailPage = () => {
           </div>
         </DialogContent>
       </Dialog>
-      <LoginRequiredDialog open={showLoginDialog} onOpenChange={setShowLoginDialog} />
+      <LoginRequiredDialog open={showLoginDialog} onOpenChange={setShowLoginDialog} redirectTo={location.pathname} />
 
       {/* Completion Message Dialog */}
       <Dialog open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>

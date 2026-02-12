@@ -13,10 +13,18 @@ import {
 interface LoginRequiredDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** 로그인 후 돌아올 경로 (예: /p/seminar/xxx) */
+  redirectTo?: string;
 }
 
-const LoginRequiredDialog = ({ open, onOpenChange }: LoginRequiredDialogProps) => {
+const LoginRequiredDialog = ({ open, onOpenChange, redirectTo }: LoginRequiredDialogProps) => {
   const navigate = useNavigate();
+
+  const goToAuth = () => {
+    const path = redirectTo ? `/auth?redirect=${encodeURIComponent(redirectTo)}` : "/auth";
+    navigate(path);
+    onOpenChange(false);
+  };
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -29,7 +37,7 @@ const LoginRequiredDialog = ({ open, onOpenChange }: LoginRequiredDialogProps) =
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>취소</AlertDialogCancel>
-          <AlertDialogAction onClick={() => navigate("/auth")}>
+          <AlertDialogAction onClick={goToAuth}>
             확인
           </AlertDialogAction>
         </AlertDialogFooter>
