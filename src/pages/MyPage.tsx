@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import BottomNavigation from "@/components/BottomNavigation";
 import Logo from "@/components/Logo";
@@ -22,6 +22,7 @@ import { toast } from "sonner";
 
 const MyPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>("parent");
@@ -155,7 +156,10 @@ const MyPage = () => {
                 variant="secondary" 
                 size="sm" 
                 className="bg-card/20 text-primary-foreground border-none hover:bg-card/30"
-                onClick={() => navigate("/auth")}
+                onClick={() => {
+                  const redirect = location.pathname + location.search;
+                  navigate(`/auth?redirect=${encodeURIComponent(redirect)}`);
+                }}
               >
                 로그인
               </Button>

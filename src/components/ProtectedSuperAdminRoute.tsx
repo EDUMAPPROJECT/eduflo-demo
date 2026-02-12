@@ -1,5 +1,5 @@
 import { useState, useEffect, ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
@@ -11,6 +11,7 @@ const ProtectedSuperAdminRoute = ({ children }: ProtectedSuperAdminRouteProps) =
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -18,7 +19,8 @@ const ProtectedSuperAdminRoute = ({ children }: ProtectedSuperAdminRouteProps) =
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
-          navigate('/auth');
+          const redirect = location.pathname + location.search;
+          navigate(`/auth?redirect=${encodeURIComponent(redirect)}`);
           return;
         }
         
@@ -33,12 +35,14 @@ const ProtectedSuperAdminRoute = ({ children }: ProtectedSuperAdminRouteProps) =
           if (import.meta.env.DEV) {
             console.error('Super admin check error:', error);
           }
-          navigate('/auth');
+          const redirect = location.pathname + location.search;
+          navigate(`/auth?redirect=${encodeURIComponent(redirect)}`);
           return;
         }
         
         if (!roleData || !roleData.is_super_admin) {
-          navigate('/auth');
+          const redirect = location.pathname + location.search;
+          navigate(`/auth?redirect=${encodeURIComponent(redirect)}`);
           return;
         }
         

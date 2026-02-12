@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,12 +16,14 @@ const PreferenceTest = () => {
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const location = useLocation();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session?.user) {
         toast.error("로그인이 필요합니다");
-        navigate("/auth");
+        const redirect = location.pathname + location.search;
+        navigate(`/auth?redirect=${encodeURIComponent(redirect)}`);
         return;
       }
       setUser(session.user);

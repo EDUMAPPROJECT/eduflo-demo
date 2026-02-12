@@ -32,7 +32,8 @@ const MyProfilePage = () => {
     const fetchData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
-        navigate("/auth");
+        const redirect = location.pathname + location.search;
+        navigate(`/auth?redirect=${encodeURIComponent(redirect)}`);
         return;
       }
       

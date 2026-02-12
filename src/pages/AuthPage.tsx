@@ -22,9 +22,6 @@ function isPhoneAuthAllowedHost(): boolean {
   return h !== "localhost" && h !== "127.0.0.1";
 }
 
-/** 로그인/회원가입 후 redirect 쿼리가 없을 때 이동할 기본 경로 (세미나 상세) */
-const DEFAULT_POST_AUTH_PATH = "/p/seminar/c5e20751-4ef1-4a24-a254-924bed6412aa";
-
 /** redirect 쿼리에서 안전한 경로만 반환 (오픈 리다이렉트 방지) */
 function getSafeRedirect(searchParams: URLSearchParams): string | null {
   const redirect = searchParams.get("redirect");
@@ -153,9 +150,16 @@ const AuthPage = () => {
     }
   };
 
-  // Navigate based on server-side role from database
+  // 로그인 후 이동: redirect 쿼리가 있으면 해당 경로, 없으면 역할별 메인
   const navigateByDatabaseRole = async (userId: string) => {
-    const target = redirectAfterAuth ?? DEFAULT_POST_AUTH_PATH;
+    // 1순위: redirect 쿼리로 돌아가기 (예: 세미나 상세 등)
+    if (redirectAfterAuth) {
+      navigate(redirectAfterAuth, { replace: true });
+      return;
+    }
+
+    // 2순위: DB에 저장된 역할 기반 기본 홈으로 이동
+    const fallback = "/p/home";
     try {
       const { data: roleData, error } = await supabase
         .from('user_roles')
@@ -165,29 +169,28 @@ const AuthPage = () => {
       
       if (error) {
         logError('role-fetch', error);
-        navigate(target);
+        navigate(fallback);
         return;
       }
       
-      // If no role found, default to parent
+      // 역할이 없으면 기본 학부모 홈
       if (!roleData) {
-        navigate(target);
+        navigate(fallback);
         return;
       }
       
-      // Check super admin first
       if (roleData.is_super_admin) {
         navigate("/super/home");
       } else if (roleData.role === "admin") {
         navigate("/admin/home");
       } else if (roleData.role === "student") {
-        navigate(target);
+        navigate("/s/home");
       } else {
-        navigate(target);
+        navigate("/p/home");
       }
     } catch (error) {
       logError('navigate-by-role', error);
-      navigate(target);
+      navigate(fallback);
     }
   };
 
@@ -310,10 +313,10 @@ const AuthPage = () => {
         if (data?.session?.user?.id) {
           await navigateByDatabaseRole(data.session.user.id);
         } else {
-          navigate(redirectAfterAuth ?? "/p/home");
+          navigate(redirectAfterAuth ?? "/p/home", { replace: Boolean(redirectAfterAuth) });
         }
       } else {
-        navigate(redirectAfterAuth ?? "/p/home");
+        navigate(redirectAfterAuth ?? "/p/home", { replace: Boolean(redirectAfterAuth) });
       }
       toast.success("로그인되었습니다");
     } catch (error: unknown) {
@@ -359,10 +362,10 @@ const AuthPage = () => {
         if (data?.session?.user?.id) {
           await navigateByDatabaseRole(data.session.user.id);
         } else {
-          navigate(redirectAfterAuth ?? "/p/home");
+          navigate(redirectAfterAuth ?? "/p/home", { replace: Boolean(redirectAfterAuth) });
         }
       } else {
-        navigate(redirectAfterAuth ?? "/p/home");
+        navigate(redirectAfterAuth ?? "/p/home", { replace: Boolean(redirectAfterAuth) });
       }
       toast.success("회원가입이 완료되었습니다");
     } catch (error: unknown) {

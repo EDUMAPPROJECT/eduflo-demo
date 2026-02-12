@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +24,7 @@ interface Profile {
 
 const SuperAdminMyPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [showNicknameDialog, setShowNicknameDialog] = useState(false);
@@ -36,7 +37,8 @@ const SuperAdminMyPage = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        navigate('/auth');
+        const redirect = location.pathname + location.search;
+        navigate(`/auth?redirect=${encodeURIComponent(redirect)}`);
         return;
       }
 

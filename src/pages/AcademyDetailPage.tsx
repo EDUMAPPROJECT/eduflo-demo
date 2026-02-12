@@ -1,5 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrCreateChatRoom } from "@/hooks/useChatRooms";
 import { useRoutePrefix } from "@/hooks/useRoutePrefix";
@@ -166,6 +166,7 @@ const mockCourses: ClassInfo[] = [
 const AcademyDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const prefix = useRoutePrefix();
   const { getOrCreateChatRoom, loading: chatLoading } = useOrCreateChatRoom();
   
@@ -235,7 +236,8 @@ const AcademyDetailPage = () => {
   const handleEnrollClass = async () => {
     if (!user) {
       toast.error("로그인이 필요합니다");
-      navigate("/auth");
+      const redirect = location.pathname + location.search;
+      navigate(`/auth?redirect=${encodeURIComponent(redirect)}`);
       return;
     }
 

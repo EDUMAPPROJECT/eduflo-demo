@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useChatRooms } from "@/hooks/useChatRooms";
 import { useRoutePrefix } from "@/hooks/useRoutePrefix";
 import Logo from "@/components/Logo";
@@ -23,6 +23,7 @@ const formatTime = (date: Date | null) => {
 
 const ChatListPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const prefix = useRoutePrefix();
   const { chatRooms, loading, userId } = useChatRooms();
 
@@ -51,7 +52,10 @@ const ChatListPage = () => {
                 채팅 상담을 이용하려면 로그인해주세요
               </p>
               <button
-                onClick={() => navigate("/auth")}
+                onClick={() => {
+                  const redirect = location.pathname + location.search;
+                  navigate(`/auth?redirect=${encodeURIComponent(redirect)}`);
+                }}
                 className="text-primary font-medium hover:underline"
               >
                 로그인하러 가기

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusinessVerification } from "@/hooks/useBusinessVerification";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ const TARGET_GRADES = [
 
 const AcademySetupPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isVerified, loading: verificationLoading } = useBusinessVerification();
   const [loading, setLoading] = useState(false);
   const [checkingAcademy, setCheckingAcademy] = useState(true);
@@ -43,7 +44,8 @@ const AcademySetupPage = () => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        navigate("/auth");
+        const redirect = location.pathname + location.search;
+        navigate(`/auth?redirect=${encodeURIComponent(redirect)}`);
         return;
       }
       

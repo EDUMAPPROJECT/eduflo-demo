@@ -64,7 +64,8 @@ const FeedPostManagementPage = () => {
     const fetchAcademyAndPosts = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
-        navigate("/auth");
+        const redirect = window.location.pathname + window.location.search;
+        navigate(`/auth?redirect=${encodeURIComponent(redirect)}`);
         return;
       }
 

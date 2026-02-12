@@ -376,7 +376,14 @@ const MyReservationsPage = () => {
         </header>
         <main className="max-w-lg mx-auto px-4 py-8 text-center">
           <p className="text-muted-foreground mb-4">로그인이 필요합니다</p>
-          <Button onClick={() => navigate("/auth")}>로그인하기</Button>
+          <Button
+            onClick={() => {
+              const redirect = window.location.pathname + window.location.search;
+              navigate(`/auth?redirect=${encodeURIComponent(redirect)}`);
+            }}
+          >
+            로그인하기
+          </Button>
         </main>
         <BottomNavigation />
       </div>
