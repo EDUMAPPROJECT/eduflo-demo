@@ -240,6 +240,12 @@ const SeminarApplicantsPage = () => {
             <User className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm font-medium">{app.student_name}</span>
           </div>
+          {(app.attendee_count ?? 0) >= 1 && (
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm">신청 인원: {app.attendee_count}명</span>
+            </div>
+          )}
           {getParentPhone(app) && (
             <div className="flex items-center gap-2">
               <Phone className="w-4 h-4 text-muted-foreground" />
@@ -350,7 +356,9 @@ const SeminarApplicantsPage = () => {
               <p className="text-xs text-muted-foreground truncate">{seminar.title}</p>
             )}
           </div>
-          <Badge variant="secondary">{applications.length}명</Badge>
+          <Badge variant="secondary">
+            {applications.reduce((sum, app) => sum + (app.attendee_count || 1), 0)}명
+          </Badge>
           <Button size="sm" variant="outline" className="gap-1" onClick={() => setAddDialogOpen(true)}>
             <Plus className="w-3.5 h-3.5" />
             수동 추가
@@ -402,6 +410,9 @@ const SeminarApplicantsPage = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="font-semibold text-sm text-foreground truncate">{app.student_name}</p>
+                          {(app.attendee_count ?? 0) > 1 && (
+                            <Badge variant="outline" className="text-[10px]">{app.attendee_count}명</Badge>
+                          )}
                           {getStatusBadge(app.status)}
                         </div>
                         {phone && (
