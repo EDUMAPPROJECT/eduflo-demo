@@ -66,10 +66,19 @@ interface Seminar {
   } | null;
 }
 
+/** 직접 링크로 들어온 경우(앱 내 이전 페이지 없음) true */
+function isDirectEntry(): boolean {
+  if (typeof window === "undefined") return false;
+  const ref = document.referrer || "";
+  const origin = window.location.origin;
+  return !ref || !ref.startsWith(origin);
+}
+
 const SeminarDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const directEntryRef = useRef(isDirectEntry());
   const [seminar, setSeminar] = useState<Seminar | null>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -311,12 +320,21 @@ const SeminarDetailPage = () => {
     );
   }
 
+  const handleBackToMain = () => {
+    if (directEntryRef.current) {
+      const segment = location.pathname.split("/").filter(Boolean)[0];
+      navigate(segment ? `/${segment}/home` : "/p/home");
+    } else {
+      navigate(-1);
+    }
+  };
+
   if (!seminar) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-4">
         <AlertCircle className="w-16 h-16 text-muted-foreground" />
         <p className="text-muted-foreground text-center">설명회를 찾을 수 없습니다</p>
-        <Button onClick={() => navigate(-1)}>뒤로 가기</Button>
+        <Button onClick={handleBackToMain}>뒤로 가기</Button>
       </div>
     );
   }
@@ -338,7 +356,7 @@ const SeminarDetailPage = () => {
       <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" onClick={handleBackToMain}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <Logo size="sm" showText={false} />
