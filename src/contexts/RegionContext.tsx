@@ -29,13 +29,19 @@ const RegionContext = createContext<RegionContextType | undefined>(undefined);
 
 const STORAGE_KEY = "eduflo_selected_region";
 
+/** 지역 미선택/전체일 때 사용하는 값. 이 값이면 지역 필터 없이 전체 목록 표시 */
+export const REGION_ALL = "all";
+
 export const RegionProvider = ({ children }: { children: ReactNode }) => {
   const [selectedRegion, setSelectedRegionState] = useState<string>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored || "dongtan4"; // 기본값: 동탄4동
+    return stored || REGION_ALL; // 기본값: 전체 (지역 설정 없어도 설명회 등 목록 표시)
   });
 
-  const selectedRegionName = ALL_REGIONS.find(r => r.id === selectedRegion)?.name || "동탄4동";
+  const selectedRegionName =
+    selectedRegion === REGION_ALL
+      ? "전체"
+      : ALL_REGIONS.find((r) => r.id === selectedRegion)?.name || "전체";
 
   const setSelectedRegion = (regionId: string) => {
     setSelectedRegionState(regionId);

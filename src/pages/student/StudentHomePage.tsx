@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useRegion } from "@/contexts/RegionContext";
+import { useRegion, REGION_ALL } from "@/contexts/RegionContext";
 import StudentBottomNavigation from "@/components/StudentBottomNavigation";
 import Logo from "@/components/Logo";
 import QuickActionMenu from "@/components/QuickActionMenu";
@@ -79,7 +79,10 @@ const StudentHomePage = () => {
 
       if (error) throw error;
 
+      // 지역이 "전체"이거나 없으면 필터 없이 모두 표시
+      const filterByRegion = regionId && regionId !== REGION_ALL;
       const filtered = (data || []).filter((seminar: any) => {
+        if (!filterByRegion) return true;
         const regions = seminar.academy?.target_regions || [];
         return regions.includes(regionId);
       });
@@ -123,7 +126,10 @@ const StudentHomePage = () => {
 
       if (error) throw error;
 
+      // 지역이 "전체"이거나 없으면 필터 없이 모두 표시
+      const filterByRegion = regionId && regionId !== REGION_ALL;
       const filtered = (data || []).filter((post: any) => {
+        if (!filterByRegion) return true;
         const regions = post.target_regions || [];
         return regions.includes(regionId);
       });

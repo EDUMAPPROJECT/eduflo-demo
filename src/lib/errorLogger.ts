@@ -21,6 +21,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   'duplicate key': '이미 존재하는 데이터입니다',
   'Invalid login credentials': '이메일 또는 비밀번호가 올바르지 않습니다',
   'User already registered': '이미 가입된 이메일입니다',
+  'email rate limit exceeded': '이메일 발송 한도를 초과했습니다. 1시간 후 다시 시도하거나 휴대폰 번호로 가입해 주세요.',
   'network': '네트워크 오류가 발생했습니다',
   'timeout': '요청 시간이 초과되었습니다',
 };

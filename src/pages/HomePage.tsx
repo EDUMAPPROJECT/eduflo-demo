@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useRegion } from "@/contexts/RegionContext";
+import { useRegion, REGION_ALL } from "@/contexts/RegionContext";
 import BottomNavigation from "@/components/BottomNavigation";
 import Logo from "@/components/Logo";
 import QuickActionMenu from "@/components/QuickActionMenu";
@@ -85,8 +85,10 @@ const HomePage = () => {
         .lte("date", threeWeeksFromNow.toISOString())
         .is("academy_id", null);
 
-      // Filter academy seminars by region
+      // 지역이 "전체"이거나 없으면 필터 없이 모두 표시
+      const filterByRegion = regionId && regionId !== REGION_ALL;
       const filteredAcademy = (academySeminars || []).filter((s: any) => {
+        if (!filterByRegion) return true;
         return s.academy?.target_regions?.includes(regionId);
       });
 
@@ -146,8 +148,10 @@ const HomePage = () => {
 
       if (error) throw error;
 
-      // Filter by target_regions (stored on feed_posts table)
+      // 지역이 "전체"이거나 없으면 필터 없이 모두 표시
+      const filterByRegion = regionId && regionId !== REGION_ALL;
       const filtered = (data || []).filter((post: any) => {
+        if (!filterByRegion) return true;
         const regions = post.target_regions || [];
         return regions.includes(regionId);
       });
@@ -201,6 +205,7 @@ const HomePage = () => {
   }, []);
 
   useEffect(() => {
+    // 지역 없음/전체여도 목록 조회 (지역 필터는 fetch 내부에서 처리)
     fetchSeminars(selectedRegion);
     fetchPosts(selectedRegion);
   }, [selectedRegion, fetchSeminars, fetchPosts]);

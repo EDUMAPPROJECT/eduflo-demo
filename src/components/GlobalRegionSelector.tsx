@@ -9,7 +9,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
-import { useRegion, AVAILABLE_REGIONS } from "@/contexts/RegionContext";
+import { useRegion, AVAILABLE_REGIONS, REGION_ALL } from "@/contexts/RegionContext";
 
 const GlobalRegionSelector = () => {
   const [open, setOpen] = useState(false);
@@ -38,6 +38,21 @@ const GlobalRegionSelector = () => {
           <DrawerTitle className="text-center">지역 선택</DrawerTitle>
         </DrawerHeader>
         <div className="p-4 pb-8 max-h-[60vh] overflow-y-auto">
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-muted-foreground mb-2 px-1">지역</h3>
+            <div className="space-y-1">
+              <button
+                onClick={() => handleSelect(REGION_ALL)}
+                className={cn(
+                  "w-full flex items-center justify-between p-3 rounded-xl transition-all",
+                  selectedRegion === REGION_ALL ? "bg-primary/10 text-primary" : "hover:bg-secondary"
+                )}
+              >
+                <span className="font-medium">전체</span>
+                {selectedRegion === REGION_ALL && <Check className="w-4 h-4 text-primary" />}
+              </button>
+            </div>
+          </div>
           {Object.entries(AVAILABLE_REGIONS).map(([groupName, regions]) => (
             <div key={groupName} className="mb-6 last:mb-0">
               <h3 className="text-sm font-semibold text-muted-foreground mb-2 px-1">

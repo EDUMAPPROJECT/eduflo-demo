@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import Logo from "@/components/Logo";
 import { Lock, ArrowRight, Phone, Mail, ArrowLeft, User } from "lucide-react";
 import { toast } from "sonner";
-import { logError } from "@/lib/errorLogger";
+import { logError, getUserFriendlyMessage } from "@/lib/errorLogger";
 import { sendIdTokenToBackend, type AuthRole } from "@/lib/sendIdTokenToBackend";
 import { formatPhoneWithDash, getDigitsOnly } from "@/lib/formatPhone";
 import { supabase } from "@/integrations/supabase/client";
@@ -108,6 +108,11 @@ const AuthPage = () => {
 
   // Email signup handler
   const handleEmailSignup = async () => {
+    const trimmedName = signupName.trim();
+    if (!trimmedName) {
+      toast.error("이름을 입력해주세요");
+      return;
+    }
     if (!email.trim() || !password.trim()) {
       toast.error("이메일과 비밀번호를 입력해주세요");
       return;
@@ -123,15 +128,16 @@ const AuthPage = () => {
         password: password.trim(),
         options: {
           emailRedirectTo: `${window.location.origin}/`,
-          data: { role: selectedRole },
+          data: { role: selectedRole, user_name: trimmedName },
         },
       });
       if (error) {
-        toast.error(error.message || "회원가입에 실패했습니다");
+        const message = getUserFriendlyMessage(error, error.message || "회원가입에 실패했습니다");
+        toast.error(message);
         return;
       }
       if (data?.user?.id) {
-        // 트리거가 role을 넣지만, 선택한 역할이 확실히 반영되도록 upsert
+        // 트리거가 role/user_name을 넣지만, 선택한 역할이 확실히 반영되도록 upsert
         const { error: roleError } = await supabase.from("user_roles").upsert(
           { user_id: data.user.id, role: selectedRole },
           { onConflict: "user_id" }
@@ -142,6 +148,7 @@ const AuthPage = () => {
         toast.success("회원가입이 완료되었습니다. 이메일을 확인해주세요.");
         setStep("login");
         resetEmailState();
+        setSignupName("");
       }
     } catch (error) {
       logError("email-signup", error);
@@ -456,6 +463,20 @@ const AuthPage = () => {
             </div>
           )}
 
+          {/* 실명 (이메일 회원가입 시) */}
+          {step === "signup" && authMode === "email" && (
+            <div className="relative mb-4">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="이름"
+                value={signupName}
+                onChange={(e) => setSignupName(e.target.value)}
+                className="pl-12 h-14 text-lg"
+              />
+            </div>
+          )}
+
           {/* Email Auth Form */}
           {authMode === "email" && (
             <div className="space-y-4">
@@ -587,7 +608,7 @@ const AuthPage = () => {
             </div>
           )}
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-2">
             {step === "login" ? (
               <p className="text-sm text-muted-foreground">
                 계정이 없으신가요?{" "}
@@ -614,6 +635,20 @@ const AuthPage = () => {
                   className="text-primary font-medium hover:underline"
                 >
                   로그인
+                </button>
+              </p>
+            )}
+            {authMode === "phone" && (
+              <p className="text-sm text-muted-foreground">
+                <button
+                  onClick={() => {
+                    setAuthMode("email");
+                    resetVerificationState();
+                    resetEmailState();
+                  }}
+                  className="text-primary font-medium hover:underline"
+                >
+                  이메일·비밀번호로 회원가입/로그인
                 </button>
               </p>
             )}
