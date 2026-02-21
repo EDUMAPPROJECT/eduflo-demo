@@ -44,7 +44,7 @@ interface Seminar {
 const ExplorePage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { selectedRegion } = useRegion();
+  const { selectedRegion, setSelectedRegion } = useRegion();
   const prefix = useRoutePrefix();
   const initialTab = searchParams.get("tab") === "seminars" ? "seminars" : "academies";
   
@@ -84,6 +84,11 @@ const ExplorePage = () => {
     }
   }, [mapExpanded]);
 
+  // 탐색 탭에 들어올 때마다 지역을 "전체"로 초기화
+  useEffect(() => {
+    setSelectedRegion(REGION_ALL);
+  }, [setSelectedRegion]);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -101,14 +106,17 @@ const ExplorePage = () => {
   const fetchAcademies = async () => {
     try {
       setLoading(true);
+      const isAllRegions =
+        !selectedRegion || selectedRegion === REGION_ALL;
+
       let query = supabase
         .from("academies")
         .select("*")
         .order("is_mou", { ascending: false })
         .order("created_at", { ascending: false });
 
-      // "전체"가 아니면 해당 지역 학원만 표시. target_regions가 비어 있거나 null인 학원(신규 등록)도 포함해 목록에 노출
-      if (selectedRegion !== REGION_ALL) {
+      // "전체"일 때는 지역 조건 없이 전체 학원 조회. 특정 지역일 때만 해당 지역 + target_regions 미설정(null) 학원 포함
+      if (!isAllRegions) {
         query = query.or(
           `target_regions.cs.{"${selectedRegion}"},target_regions.is.null`
         );
@@ -120,6 +128,7 @@ const ExplorePage = () => {
       setAcademies((data as Academy[]) || []);
     } catch (error) {
       console.error("Error fetching academies:", error);
+      setAcademies([]);
     } finally {
       setLoading(false);
     }
@@ -140,13 +149,17 @@ const ExplorePage = () => {
         .order("date", { ascending: true });
 
       if (error) throw error;
-      
-      // Filter by target_regions
-      const filtered = ((data as any) || []).filter((seminar: any) => {
-        const regions = seminar.academy?.target_regions || [];
-        return regions.includes(selectedRegion);
-      });
-      
+
+      // "전체"가 아니면 해당 지역 학원의 설명회만 표시
+      const list = (data as any) || [];
+      const filtered =
+        !selectedRegion || selectedRegion === REGION_ALL
+          ? list
+          : list.filter((seminar: any) => {
+              const regions = seminar.academy?.target_regions || [];
+              return regions.includes(selectedRegion);
+            });
+
       setSeminars(filtered);
     } catch (error) {
       console.error("Error fetching seminars:", error);
