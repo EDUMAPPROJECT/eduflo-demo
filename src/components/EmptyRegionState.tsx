@@ -20,7 +20,7 @@ const EmptyRegionState = ({ region }: EmptyRegionStateProps) => {
         <MapPin className="w-8 h-8 text-muted-foreground" />
       </div>
       <h3 className="font-semibold text-foreground mb-2">
-        아직 우리 동네에 등록된 정보가 없어요
+        아직 우리 동네에 등록된 설명회가 없어요
       </h3>
       <p className="text-sm text-muted-foreground mb-6">
         다른 지역을 구경해보시겠어요?
