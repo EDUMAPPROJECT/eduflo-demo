@@ -39,6 +39,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
 import {
+  ArrowLeft,
   Building2,
   Image,
   FileText,
@@ -694,7 +695,10 @@ const ProfileManagementPage = () => {
     return (
       <div className="min-h-screen bg-background pb-20">
         <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
-          <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <Logo size="sm" showText={false} />
             <span className="text-xs font-medium text-primary bg-secondary px-2 py-1 rounded-full">
               학원 계정 설정
@@ -857,7 +861,10 @@ const ProfileManagementPage = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           <Logo size="sm" showText={false} />
           <span className="text-xs font-medium text-primary bg-secondary px-2 py-1 rounded-full">프로필 관리</span>
         </div>

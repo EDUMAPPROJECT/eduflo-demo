@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { 
-  ChevronLeft,
+  ArrowLeft,
   Clock,
   GraduationCap,
   Calendar,
@@ -368,10 +368,10 @@ const MyReservationsPage = () => {
       <div className="min-h-screen bg-background pb-20">
         <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
           <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-1">
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-            <h1 className="text-lg font-semibold">내 예약</h1>
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <h1 className="font-semibold text-foreground">내 예약</h1>
           </div>
         </header>
         <main className="max-w-lg mx-auto px-4 py-8 text-center">
@@ -395,10 +395,10 @@ const MyReservationsPage = () => {
       {/* Header */}
       <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-1">
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-          <h1 className="text-lg font-semibold">내 예약</h1>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <h1 className="font-semibold text-foreground">내 예약</h1>
         </div>
       </header>
 

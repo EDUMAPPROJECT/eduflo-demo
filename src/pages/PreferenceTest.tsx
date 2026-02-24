@@ -137,10 +137,10 @@ const PreferenceTest = () => {
     <div className="min-h-screen bg-gradient-to-b from-primary/5 to-background">
       {/* Header */}
       <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-4">
-          <button onClick={handleBack} className="p-2 -ml-2 hover:bg-muted rounded-full">
+        <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={handleBack}>
             <ArrowLeft className="w-5 h-5" />
-          </button>
+          </Button>
           <div className="flex-1">
             <Progress value={progress} className="h-2" />
           </div>

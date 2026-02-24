@@ -75,7 +75,7 @@ const AnnouncementsPage = () => {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-lg font-semibold">공지사항</h1>
+          <h1 className="font-semibold text-foreground">공지사항</h1>
         </div>
       </header>
 

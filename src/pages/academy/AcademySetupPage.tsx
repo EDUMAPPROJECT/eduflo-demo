@@ -176,9 +176,9 @@ const AcademySetupPage = () => {
         {/* Header */}
         <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
           <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-muted rounded-lg transition-colors">
-              <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <h1 className="font-semibold text-foreground">내 학원 등록</h1>
           </div>
         </header>
@@ -213,14 +213,14 @@ const AcademySetupPage = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-muted rounded-lg transition-colors">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="font-semibold text-foreground">내 학원 등록</h1>
-        </div>
-      </header>
+<header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
+      <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <h1 className="font-semibold text-foreground">내 학원 등록</h1>
+      </div>
+    </header>
 
       {/* Main Content */}
       <main className="max-w-lg mx-auto px-4 py-6">

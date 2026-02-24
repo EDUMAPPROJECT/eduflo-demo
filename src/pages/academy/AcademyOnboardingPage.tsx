@@ -76,9 +76,9 @@ const AcademyOnboardingPage = () => {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-muted rounded-lg transition-colors">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           <h1 className="font-semibold text-foreground">학원 계정 설정</h1>
         </div>
       </header>

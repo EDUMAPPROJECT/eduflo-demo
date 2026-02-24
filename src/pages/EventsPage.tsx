@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, PartyPopper, Calendar, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useRegion } from "@/contexts/RegionContext";
 import BottomNavigation from "@/components/BottomNavigation";
@@ -101,10 +102,10 @@ const EventsPage = () => {
       {/* Header */}
       <header className="sticky top-0 bg-card/80 backdrop-blur-lg border-b border-border z-40">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-1">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-lg font-semibold">이벤트</h1>
+          </Button>
+          <h1 className="font-semibold text-foreground">이벤트</h1>
         </div>
       </header>
 
