@@ -5,10 +5,12 @@ interface ChatRoom {
   id: string;
   academy_id: string;
   parent_id: string;
+  staff_id: string | null;
   academy: {
     id: string;
     name: string;
     profile_image: string | null;
+    owner_id: string | null;
   };
   parent_profile?: {
     user_name: string | null;
@@ -19,7 +21,9 @@ interface ChatRoom {
   unreadCount: number;
 }
 
-export const useChatRooms = (isAdmin: boolean = false) => {
+type OwnerViewMode = "all" | "self" | "others";
+
+export const useChatRooms = (isAdmin: boolean = false, ownerView: OwnerViewMode = "all") => {
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -42,11 +46,13 @@ export const useChatRooms = (isAdmin: boolean = false) => {
             id,
             academy_id,
             parent_id,
+            staff_id,
             updated_at,
             academies (
               id,
               name,
-              profile_image
+              profile_image,
+              owner_id
             )
           `)
           .order('updated_at', { ascending: false });
@@ -77,7 +83,7 @@ export const useChatRooms = (isAdmin: boolean = false) => {
               .eq('is_read', false)
               .neq('sender_id', session.user.id);
 
-            const academy = room.academies as unknown as { id: string; name: string; profile_image: string | null };
+            const academy = room.academies as unknown as { id: string; name: string; profile_image: string | null; owner_id: string | null };
 
             // Fetch parent profile if admin
             let parentProfile = null;
@@ -98,7 +104,9 @@ export const useChatRooms = (isAdmin: boolean = false) => {
                 id: academy.id,
                 name: academy.name,
                 profile_image: academy.profile_image,
+                owner_id: academy.owner_id,
               },
+              staff_id: room.staff_id ?? null,
               parent_profile: parentProfile,
               lastMessage: lastMessageData?.content || null,
               lastMessageAt: lastMessageData?.created_at ? new Date(lastMessageData.created_at) : null,
@@ -107,7 +115,30 @@ export const useChatRooms = (isAdmin: boolean = false) => {
           })
         );
 
-        setChatRooms(roomsWithMessages);
+        // Owner 전용 필터링: 채팅 탭에서는 자신의 채팅만, 관리 페이지에서는 다른 멤버 채팅만 보기 등
+        let filteredRooms = roomsWithMessages;
+        if (isAdmin && userId) {
+          if (ownerView === "self") {
+            filteredRooms = roomsWithMessages.filter((room) => {
+              const isOwner = room.academy.owner_id === userId;
+              if (!isOwner) {
+                // 부원장/강사 등은 RLS로 이미 자신의 채팅만 보이므로 추가 필터 없음
+                return true;
+              }
+              // 원장: 본인 담당(staff_id = 본인) 또는 담당자 미지정(staff_id NULL)만
+              return room.staff_id === userId || room.staff_id === null;
+            });
+          } else if (ownerView === "others") {
+            filteredRooms = roomsWithMessages.filter((room) => {
+              const isOwner = room.academy.owner_id === userId;
+              if (!isOwner) return false;
+              // 원장: 본인을 제외한 다른 직원에게 배정된 채팅만
+              return room.staff_id !== null && room.staff_id !== userId;
+            });
+          }
+        }
+
+        setChatRooms(filteredRooms);
       } catch (error) {
         console.error('Error:', error);
       } finally {
@@ -116,7 +147,7 @@ export const useChatRooms = (isAdmin: boolean = false) => {
     };
 
     fetchChatRooms();
-  }, [isAdmin]);
+  }, [isAdmin, ownerView]);
 
   return { chatRooms, loading, userId };
 };
@@ -124,7 +155,16 @@ export const useChatRooms = (isAdmin: boolean = false) => {
 export const useOrCreateChatRoom = () => {
   const [loading, setLoading] = useState(false);
 
-  const getOrCreateChatRoom = async (academyId: string): Promise<string | null> => {
+  /**
+   * Get or create a chat room for the current user and academy.
+   * @param academyId - Academy UUID
+   * @param staffUserId - Optional. When provided, the room is for chatting with this specific staff (원장/부원장/강사).
+   */
+  const getOrCreateChatRoom = async (
+    academyId: string,
+    staffUserId?: string | null,
+    requiresTeacherAccept: boolean = false
+  ): Promise<string | null> => {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -132,31 +172,69 @@ export const useOrCreateChatRoom = () => {
         return null;
       }
 
-      // Check if chat room already exists
-      const { data: existingRoom } = await supabase
+      const parentId = session.user.id;
+
+      // Check if chat room already exists (same academy, parent, and optional staff)
+      let query = supabase
         .from('chat_rooms')
         .select('id')
         .eq('academy_id', academyId)
-        .eq('parent_id', session.user.id)
-        .maybeSingle();
+        .eq('parent_id', parentId);
+
+      if (staffUserId) {
+        query = query.eq('staff_id', staffUserId);
+      } else {
+        query = query.is('staff_id', null);
+      }
+
+      const { data: existingRoom } = await query.maybeSingle();
 
       if (existingRoom) {
         return existingRoom.id;
       }
 
       // Create new chat room
+      const insertPayload: { academy_id: string; parent_id: string; staff_id?: string | null } = {
+        academy_id: academyId,
+        parent_id: parentId,
+      };
+      if (staffUserId) {
+        insertPayload.staff_id = staffUserId;
+      } else {
+        insertPayload.staff_id = null;
+      }
+
       const { data: newRoom, error } = await supabase
         .from('chat_rooms')
-        .insert({
-          academy_id: academyId,
-          parent_id: session.user.id,
-        })
+        .insert(insertPayload)
         .select('id')
         .single();
 
-      if (error) {
+      if (error || !newRoom) {
         console.error('Error creating chat room:', error);
         return null;
+      }
+
+      // If this chat is with a teacher, create an initial system-like request message
+      if (requiresTeacherAccept && staffUserId) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('user_name')
+            .eq('id', parentId)
+            .maybeSingle();
+
+          const parentName = profile?.user_name || '학부모';
+          const content = `${parentName}님이 선생님에게 채팅 상담 요청을 보냈습니다. 수락을 통해 채팅 진행 여부를 결정해주세요`;
+
+          await supabase.from('messages').insert({
+            chat_room_id: newRoom.id,
+            sender_id: parentId,
+            content,
+          });
+        } catch (messageError) {
+          console.error('Error creating initial teacher request message:', messageError);
+        }
       }
 
       return newRoom.id;

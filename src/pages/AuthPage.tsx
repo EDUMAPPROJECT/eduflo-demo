@@ -609,7 +609,7 @@ const AuthPage = () => {
           )}
 
           <div className="mt-6 text-center space-y-2">
-            {step === "login" ? (
+            {/* {step === "login" ? (
               <p className="text-sm text-muted-foreground">
                 계정이 없으신가요?{" "}
                 <button
@@ -637,7 +637,7 @@ const AuthPage = () => {
                   로그인
                 </button>
               </p>
-            )}
+            )} */}
             {authMode === "phone" && (
               <p className="text-sm text-muted-foreground">
                 <button
@@ -648,7 +648,7 @@ const AuthPage = () => {
                   }}
                   className="text-primary font-medium hover:underline"
                 >
-                  이메일·비밀번호로 회원가입/로그인
+                  체험 계정으로 로그인
                 </button>
               </p>
             )}

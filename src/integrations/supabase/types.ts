@@ -282,6 +282,7 @@ export type Database = {
           created_at: string
           id: string
           parent_id: string
+          staff_id: string | null
           updated_at: string
         }
         Insert: {
@@ -289,6 +290,7 @@ export type Database = {
           created_at?: string
           id?: string
           parent_id: string
+          staff_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -296,6 +298,7 @@ export type Database = {
           created_at?: string
           id?: string
           parent_id?: string
+          staff_id?: string | null
           updated_at?: string
         }
         Relationships: [

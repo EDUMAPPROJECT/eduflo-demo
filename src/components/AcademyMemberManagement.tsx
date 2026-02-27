@@ -398,7 +398,22 @@ const AcademyMemberManagement = ({ academyId }: AcademyMemberManagementProps) =>
             </div>
           ) : (
             <div className="space-y-2">
-              {members.filter(m => m.status === 'approved').map((member) => {
+              {members
+                .filter(m => m.status === 'approved')
+                .slice()
+                .sort((a, b) => {
+                  const getRoleRank = (role: string) => {
+                    if (role === 'owner') return 0;      // 원장 항상 맨 위
+                    if (role === 'vice_owner') return 1; // 부원장
+                    if (role === 'teacher') return 2;    // 강사
+                    return 3;                            // 그 외 관리자
+                  };
+                  const rankDiff = getRoleRank(a.role) - getRoleRank(b.role);
+                  if (rankDiff !== 0) return rankDiff;
+                  // 같은 역할일 때는 가입 순으로 정렬
+                  return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+                })
+                .map((member) => {
                 const GradeIcon = getGradeIcon(member.role, member.grade);
                 const isOwnerMember = member.role === 'owner';
                 return (

@@ -55,6 +55,7 @@ const AcademyDetailMap = ({
           zoom: 16,
           logoControl: false,
           mapTypeControl: false,
+          draggable: false,
         });
 
         const marker = new window.naver.maps.Marker({
@@ -64,7 +65,8 @@ const AcademyDetailMap = ({
           icon: {
             url: markerIcon,
             scaledSize: new window.naver.maps.Size(36, 42),
-            anchor: new window.naver.maps.Point(27, 54),
+            // 앵커를 아이콘 하단 중앙(36/2, 42)으로 두어 모든 줌에서 정확한 위치에 표시
+            anchor: new window.naver.maps.Point(18, 42),
           },
         });
 
@@ -113,10 +115,6 @@ const AcademyDetailMap = ({
             <Navigation className="w-4 h-4" />
             네이버 지도
           </Button>
-          <Button variant="outline" className="flex-1 gap-2" onClick={openKakaoMap}>
-            <Navigation className="w-4 h-4" />
-            카카오맵
-          </Button>
         </div>
       </div>
     );
@@ -146,10 +144,6 @@ const AcademyDetailMap = ({
         <Button variant="outline" className="flex-1 gap-2" onClick={openNaverMap}>
           <Navigation className="w-4 h-4" />
           네이버 지도
-        </Button>
-        <Button variant="outline" className="flex-1 gap-2" onClick={openKakaoMap}>
-          <Navigation className="w-4 h-4" />
-          카카오맵
         </Button>
       </div>
     </div>

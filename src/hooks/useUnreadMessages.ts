@@ -15,18 +15,19 @@ export const useUnreadMessages = (isAdmin: boolean = false) => {
       const userId = session.user.id;
 
       if (isAdmin) {
-        // Admin: Check unread messages in chat rooms for academies they own
-        const { data: academies } = await supabase
-          .from('academies')
-          .select('id')
-          .eq('owner_id', userId);
+        // Admin(원장/부원장/강사): 자신이 속한 학원의 채팅방에서 읽지 않은 메시지가 있는지 확인
+        const { data: memberships } = await supabase
+          .from('academy_members')
+          .select('academy_id')
+          .eq('user_id', userId)
+          .eq('status', 'approved');
 
-        if (!academies || academies.length === 0) {
+        if (!memberships || memberships.length === 0) {
           setHasUnread(false);
           return;
         }
 
-        const academyIds = academies.map(a => a.id);
+        const academyIds = memberships.map(m => m.academy_id);
 
         const { data: chatRooms } = await supabase
           .from('chat_rooms')

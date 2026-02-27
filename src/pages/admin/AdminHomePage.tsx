@@ -205,8 +205,7 @@ const AdminHomePage = () => {
     {
       icon: MessageSquare,
       label: "학원 채팅 관리",
-      path: "/admin/chat-management",
-      disabled: true
+      path: "/admin/chat-management"
     }
   ];
 

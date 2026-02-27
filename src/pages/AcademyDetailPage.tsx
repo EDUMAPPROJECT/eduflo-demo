@@ -7,6 +7,7 @@ import { useRoutePrefix } from "@/hooks/useRoutePrefix";
 import Logo from "@/components/Logo";
 import BottomNavigation from "@/components/BottomNavigation";
 import AcademyNewsTab from "@/components/AcademyNewsTab";
+import { ChatConsultationStaffDialog, type ChatStaffItem } from "@/components/ChatConsultationStaffDialog";
 import ConsultationReservationDialog from "@/components/ConsultationReservationDialog";
 import LoginRequiredDialog from "@/components/LoginRequiredDialog";
 import { Button } from "@/components/ui/button";
@@ -185,18 +186,23 @@ const AcademyDetailPage = () => {
   }>({ isOpen: false, classInfo: null });
   
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [chatStaffDialogOpen, setChatStaffDialogOpen] = useState(false);
 
-  // Removed old consultation form state - using new ConsultationReservationDialog
+  const handleOpenChatConsultation = () => {
+    setChatStaffDialogOpen(true);
+  };
 
-  const handleStartChat = async () => {
+  const handleChatStaffSelect = async (staff: ChatStaffItem) => {
     if (!user) {
+      setChatStaffDialogOpen(false);
       setShowLoginDialog(true);
       return;
     }
-
     if (!id) return;
 
-    const roomId = await getOrCreateChatRoom(id);
+    const isTeacher = staff.grade_label === "강사";
+    const roomId = await getOrCreateChatRoom(id, staff.user_id, isTeacher);
+    setChatStaffDialogOpen(false);
     if (roomId) {
       navigate(`${prefix}/chats/${roomId}`);
     } else {
@@ -890,17 +896,16 @@ const AcademyDetailPage = () => {
         </AlertDialog>
       </main>
 
-      {/* Fixed Bottom Buttons */}
-      <div className="fixed bottom-16 left-0 right-0 bg-card border-t border-border p-3 z-50">
+      {/* Fixed Bottom Buttons - z-[70] so above bottom nav (z-[60]) and clickable */}
+      <div className="fixed bottom-16 left-0 right-0 bg-card border-t border-border p-3 z-[70]">
         <div className="max-w-lg mx-auto flex gap-2">
           <Button
             variant="outline"
             className="flex-1 h-11 text-sm gap-1.5"
-            onClick={handleStartChat}
-            disabled={chatLoading}
+            onClick={handleOpenChatConsultation}
           >
             <MessageCircle className="w-4 h-4" />
-            {chatLoading ? "연결 중..." : "채팅 상담"}
+            채팅 상담
           </Button>
           <Button
             className="flex-1 h-11 text-sm"
@@ -916,6 +921,17 @@ const AcademyDetailPage = () => {
           </Button>
         </div>
       </div>
+
+      {/* Chat consultation: select staff (원장/부원장/강사) then create room */}
+      {id && (
+        <ChatConsultationStaffDialog
+          open={chatStaffDialogOpen}
+          onOpenChange={setChatStaffDialogOpen}
+          academyId={id}
+          onSelect={handleChatStaffSelect}
+          loading={chatLoading}
+        />
+      )}
 
       {/* Consultation Reservation Dialog */}
       {academy && (
