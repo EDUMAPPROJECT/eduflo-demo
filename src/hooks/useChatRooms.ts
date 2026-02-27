@@ -16,6 +16,10 @@ interface ChatRoom {
     user_name: string | null;
     phone: string | null;
   } | null;
+  staff_profile?: {
+    display_name: string;
+    grade_label: string;
+  } | null;
   lastMessage: string | null;
   lastMessageAt: Date | null;
   unreadCount: number;
@@ -96,6 +100,27 @@ export const useChatRooms = (isAdmin: boolean = false, ownerView: OwnerViewMode 
               parentProfile = profileData;
             }
 
+            // Fetch staff profile (원장/부원장/강사 닉네임 및 직책) for parent chat list 구분용
+            let staffProfile: ChatRoom["staff_profile"] = null;
+            if (!isAdmin && room.staff_id) {
+              try {
+                const { data: staffList } = await supabase.rpc('get_academy_chat_staff', {
+                  p_academy_id: academy.id,
+                });
+                const matched = (staffList as any[] | null)?.find(
+                  (s) => s.user_id === room.staff_id
+                );
+                if (matched) {
+                  staffProfile = {
+                    display_name: matched.display_name || '이름 없음',
+                    grade_label: matched.grade_label || '',
+                  };
+                }
+              } catch (error) {
+                console.error('Error fetching staff profile for chat room:', error);
+              }
+            }
+
             return {
               id: room.id,
               academy_id: room.academy_id,
@@ -108,6 +133,7 @@ export const useChatRooms = (isAdmin: boolean = false, ownerView: OwnerViewMode 
               },
               staff_id: room.staff_id ?? null,
               parent_profile: parentProfile,
+              staff_profile: staffProfile,
               lastMessage: lastMessageData?.content || null,
               lastMessageAt: lastMessageData?.created_at ? new Date(lastMessageData.created_at) : null,
               unreadCount: unreadCount || 0,
