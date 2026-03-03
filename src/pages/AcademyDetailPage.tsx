@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrCreateChatRoom } from "@/hooks/useChatRooms";
@@ -48,9 +48,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { logError } from "@/lib/errorLogger";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
-const LocationMap = lazy(() => import("@/components/LocationMap"));
-const AcademyDetailMap = lazy(() => import("@/components/AcademyDetailMap"));
+const LocationMap = lazyWithRetry(() => import("@/components/LocationMap"));
+const AcademyDetailMap = lazyWithRetry(() => import("@/components/AcademyDetailMap"));
 
 interface Academy {
   id: string;
