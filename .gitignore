@@ -22,7 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-**firebase-adminsdk*.json
 
 # Environment variables (never commit secrets)
 .env

@@ -84,13 +84,6 @@ const RoleSelection = () => {
           </Button>
         </div>
       </div>
-
-      {/* Footer */}
-      <div className="text-center pb-8 px-6">
-        <p className="text-xs text-muted-foreground">
-          시작하면 서비스 이용약관과 개인정보처리방침에 동의하게 됩니다
-        </p>
-      </div>
     </div>
   );
 };
