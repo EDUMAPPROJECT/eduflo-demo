@@ -106,6 +106,8 @@ const AdminChatRoomPage = () => {
           ) : (
             messages.map((message, index) => {
               const isMe = message.sender_id === userId;
+              const isParentMessage = message.sender_id === roomInfo.parent_id;
+              const isStaffOrMemberMessage = !isParentMessage;
               const isTeacherStaff =
                 roomInfo.staff_profile?.grade_label === "강사" &&
                 roomInfo.staff_id === userId;
@@ -115,6 +117,23 @@ const AdminChatRoomPage = () => {
 
               if (isMe) {
                 // 관리자(나)의 메시지
+                return (
+                  <div
+                    key={message.id}
+                    className="flex justify-end"
+                  >
+                    <div className="max-w-[75%] rounded-2xl px-4 py-2.5 bg-primary text-primary-foreground rounded-tr-sm">
+                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      <p className="text-xs mt-1 text-primary-foreground/70">
+                        {formatTime(message.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
+
+              // 학원 멤버(다른 관리자/강사)의 메시지: 오른쪽, 프로필/닉네임 없이 말풍선만
+              if (isStaffOrMemberMessage) {
                 return (
                   <div
                     key={message.id}

@@ -41,7 +41,8 @@ export const useChatRooms = (isAdmin: boolean = false, ownerView: OwnerViewMode 
           return;
         }
 
-        setUserId(session.user.id);
+        const currentUserId = session.user.id;
+        setUserId(currentUserId);
 
         // Get chat rooms with academy info
         const { data: rooms, error } = await supabase
@@ -85,7 +86,7 @@ export const useChatRooms = (isAdmin: boolean = false, ownerView: OwnerViewMode 
               .select('*', { count: 'exact', head: true })
               .eq('chat_room_id', room.id)
               .eq('is_read', false)
-              .neq('sender_id', session.user.id);
+              .neq('sender_id', currentUserId);
 
             const academy = room.academies as unknown as { id: string; name: string; profile_image: string | null; owner_id: string | null };
 
@@ -143,23 +144,23 @@ export const useChatRooms = (isAdmin: boolean = false, ownerView: OwnerViewMode 
 
         // Owner 전용 필터링: 채팅 탭에서는 자신의 채팅만, 관리 페이지에서는 다른 멤버 채팅만 보기 등
         let filteredRooms = roomsWithMessages;
-        if (isAdmin && userId) {
+        if (isAdmin) {
           if (ownerView === "self") {
             filteredRooms = roomsWithMessages.filter((room) => {
-              const isOwner = room.academy.owner_id === userId;
+              const isOwner = room.academy.owner_id === currentUserId;
               if (!isOwner) {
                 // 부원장/강사 등은 RLS로 이미 자신의 채팅만 보이므로 추가 필터 없음
                 return true;
               }
               // 원장: 본인 담당(staff_id = 본인) 또는 담당자 미지정(staff_id NULL)만
-              return room.staff_id === userId || room.staff_id === null;
+              return room.staff_id === currentUserId || room.staff_id === null;
             });
           } else if (ownerView === "others") {
             filteredRooms = roomsWithMessages.filter((room) => {
-              const isOwner = room.academy.owner_id === userId;
+              const isOwner = room.academy.owner_id === currentUserId;
               if (!isOwner) return false;
               // 원장: 본인을 제외한 다른 직원에게 배정된 채팅만
-              return room.staff_id !== null && room.staff_id !== userId;
+              return room.staff_id !== null && room.staff_id !== currentUserId;
             });
           }
         }

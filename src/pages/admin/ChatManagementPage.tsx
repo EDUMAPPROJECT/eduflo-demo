@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useChatRooms } from "@/hooks/useChatRooms";
+import { useAcademyMembership } from "@/hooks/useAcademyMembership";
 import AdminBottomNavigation from "@/components/AdminBottomNavigation";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -10,8 +11,16 @@ import { ArrowLeft, MessageSquare, User } from "lucide-react";
 const ChatManagementPage = () => {
   const navigate = useNavigate();
   const { chatRooms, loading, userId } = useChatRooms(true, "others");
-
-  const isOwnerView = chatRooms.some((room) => room.academy.owner_id === userId);
+  const { memberships, loading: membershipLoading } = useAcademyMembership();
+  const isOwner =
+    !!userId &&
+    memberships.some(
+      (m) =>
+        m.membership.status === "approved" &&
+        m.membership.role === "owner"
+    );
+  const isLoading = loading || membershipLoading;
+  const noSession = !userId && !membershipLoading && memberships.length === 0;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -28,7 +37,11 @@ const ChatManagementPage = () => {
 
       {/* Main Content */}
       <main className="max-w-lg mx-auto px-4 py-6">
-        {!userId ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        ) : noSession ? (
           <Card className="shadow-card">
             <CardContent className="p-8 text-center">
               <h3 className="font-semibold text-foreground mb-2">로그인이 필요합니다</h3>
@@ -37,7 +50,7 @@ const ChatManagementPage = () => {
               </p>
             </CardContent>
           </Card>
-        ) : !isOwnerView ? (
+        ) : !isOwner ? (
           <Card className="shadow-card">
             <CardContent className="p-8 text-center">
               <h3 className="font-semibold text-foreground mb-2">원장만 접근 가능합니다</h3>
@@ -46,10 +59,6 @@ const ChatManagementPage = () => {
               </p>
             </CardContent>
           </Card>
-        ) : loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
         ) : chatRooms.length === 0 ? (
           <Card className="shadow-card">
             <CardContent className="p-8 text-center">
