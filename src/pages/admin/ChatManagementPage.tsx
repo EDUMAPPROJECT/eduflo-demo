@@ -86,7 +86,7 @@ const ChatManagementPage = () => {
 
                     {/* Chat Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center justify-between mb-1 gap-2">
                         <h3 className="font-semibold text-foreground truncate">
                           {room.parent_profile?.user_name || '학부모'}
                         </h3>
@@ -99,6 +99,16 @@ const ChatManagementPage = () => {
                           </span>
                         )}
                       </div>
+                      {room.staff_profile && (
+                        <p className="text-xs text-muted-foreground mb-1">
+                          담당: {room.staff_profile.display_name}
+                          {room.staff_profile.grade_label === '강사'
+                            ? ' 선생님'
+                            : room.staff_profile.grade_label
+                              ? ` ${room.staff_profile.grade_label}`
+                              : ''}
+                        </p>
+                      )}
                       <div className="flex items-center justify-between">
                         <p className="text-sm text-muted-foreground truncate">
                           {room.lastMessage || "새로운 상담"}

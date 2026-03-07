@@ -101,9 +101,9 @@ export const useChatRooms = (isAdmin: boolean = false, ownerView: OwnerViewMode 
               parentProfile = profileData;
             }
 
-            // Fetch staff profile (원장/부원장/강사 닉네임 및 직책) for parent chat list 구분용
+            // Fetch staff profile (원장/부원장/강사 닉네임 및 직책) for parent chat list 구분용 / 학원 채팅 관리 담당자 표시용
             let staffProfile: ChatRoom["staff_profile"] = null;
-            if (!isAdmin && room.staff_id) {
+            if (room.staff_id) {
               try {
                 const { data: staffList } = await supabase.rpc('get_academy_chat_staff', {
                   p_academy_id: academy.id,
